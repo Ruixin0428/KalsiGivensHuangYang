@@ -49,4 +49,4 @@ po/*~
 # RStudio Connect folder
 rsconnect/
 *.Rproj
-data/raw/raw_large/*
+data/raw_large/*
