@@ -1,6 +1,6 @@
-Group name: Conservation Crew
+#Conservation Crew
 
-Group members: 1. Gina Givens 2. Jasleen Kalsi 3. Sara Huang 4. Ruixin Yang
+## Group members: 1. Gina Givens 2. Jasleen Kalsi 3. Sara Huang 4. Ruixin Yang
 
 Research Question: Are white-tailed deer observations more frequent at a close distance to developed areas that border wildland vegetation in North Carolina?
 
