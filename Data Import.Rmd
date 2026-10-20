@@ -1,0 +1,26 @@
+---
+title: "Data Import"
+author: "Sara Huang"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(readr)
+library(sf)
+```
+
+# Data Import
+```{r}
+df_deer <- read_csv("data/raw/NC_WhiteTailedDeer_iNaturalist_public.csv")
+NC_Spacial <- st_read("data/raw_large/NC_wui_block_1990_2020_change_v4.shp")
+```
+
+# Data Summary
+```{r}
+print(paste("df_deer has", nrow(df_deer), "rows and", ncol(df_deer), "columns."))
+print(paste("NC_Spacial has", nrow(NC_Spacial), "rows and", ncol(NC_Spacial), "columns."))
+```
+
+
