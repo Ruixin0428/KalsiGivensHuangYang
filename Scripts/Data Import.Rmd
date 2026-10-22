@@ -13,8 +13,10 @@ library(sf)
 
 # Data Import
 ```{r}
-df_deer <- read_csv("data/raw/NC_WhiteTailedDeer_iNaturalist_public.csv")
-NC_Spacial <- st_read("data/raw_large/NC_wui_block_1990_2020_change_v4.shp")
+# The following date import codes only works for Sara's end. If you are working from the R container, please # the first two lines of codes and delete the # in front of the third code line!!!
+df_deer <- read_csv("/Users/huangyiping/KalsiGivensHuangYang/data/raw/NC_WhiteTailedDeer_iNaturalist_public.csv")
+NC_Spacial <- st_read("/Users/huangyiping/KalsiGivensHuangYang/data/raw_large/NC_wui_block_1990_2020_change_v4.shp")
+#df_deer <- read_csv("data/raw/NC_WhiteTailedDeer_iNaturalist_public.csv")
 ```
 
 # Data Summary
