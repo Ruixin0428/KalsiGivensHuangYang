@@ -50,7 +50,7 @@ missing_summary
 ```
 ### Interpretation 
 
-This dataset contains 16,595 observations and 37 variables. No missing values for both latitude and longitude. However, 66 observations (0.40%) are missing observation dates. In addition, 3,165 observations (19.07%) are missing positional accuracy information, while 1,938 (11.68%) are missing public positional accuracy information. Several non-essential variables, including sound_url, tag_list, and description, have high proportions of missing values. They are not required for the planned spatial analysis. Overall, the dataset has complete geographic coordinate fields. No observations were removed during this initial assessment.
+This dataset contains 16,595 observations and 37 variables. No missing values for both latitude and longitude. However, 66 observations (0.40%) are missing observation dates. In addition, 3,165 observations (19.07%) are missing positional accuracy information, while 1,938 (11.68%) are missing public positional accuracy information. Several non-essential variables, including sound_url, tag_list, and description, have high proportions of missing values.
 
 ## 3. Duplicate Observations
 
@@ -69,9 +69,9 @@ sum(duplicated(df_deer$id))
 sum(duplicated(df_deer))
 ```
 
-### Interperation
+### Interpretation
 
-This dataset contains 16,595 observations with 16,595 unique observation IDs. No duplicated IDs or fully duplicated rows were identified.
+No duplicated IDs or fully duplicated rows were identified.
 
 ## 4. Observation Quality and Coordinate Obscuration
 
@@ -119,7 +119,7 @@ table(df_deer_filtered$year)
 ```
 ### Data Quality Summary
 
-The original dataset contains 16,595 white-tailed deer observations. No duplicate observation IDs or fully duplicated rows were identified, and all observations have publicly available geographic coordinates. However, 66 records have missing observation dates, and 2,568 records (15.47%) have obscured coordinates. Positional accuracy information is also incomplete. After restricting the data to 2010–2020, 2,891 observations were retained. Additional cleaning decisions and coordinate validation results are documented in the following sections.
+The original dataset contains 16,595 white-tailed deer observations. No duplicate observation IDs or fully duplicated rows were identified, and all observations have publicly available geographic coordinates. However, 66 records have missing observation dates, and 2,568 records (15.47%) have obscured coordinates. Positional accuracy information is also incomplete. After restricting the data to 2010–2020, 2,891 observations were retained. Additional cleaning results are documented in the following sections.
 
 
 ## 6. Select Variables and Export Cleaned Data

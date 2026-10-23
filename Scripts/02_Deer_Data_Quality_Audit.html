@@ -497,10 +497,7 @@ missing values for both latitude and longitude. However, 66 observations
 (19.07%) are missing positional accuracy information, while 1,938
 (11.68%) are missing public positional accuracy information. Several
 non-essential variables, including sound_url, tag_list, and description,
-have high proportions of missing values. They are not required for the
-planned spatial analysis. Overall, the dataset has complete geographic
-coordinate fields. No observations were removed during this initial
-assessment.</p>
+have high proportions of missing values.</p>
 </div>
 </div>
 <div id="duplicate-observations" class="section level2">
@@ -517,11 +514,9 @@ sum(duplicated(df_deer$id))</code></pre>
 <pre class="r"><code># Check fully duplicated rows
 sum(duplicated(df_deer))</code></pre>
 <pre><code>## [1] 0</code></pre>
-<div id="interperation" class="section level3">
-<h3>Interperation</h3>
-<p>This dataset contains 16,595 observations with 16,595 unique
-observation IDs. No duplicated IDs or fully duplicated rows were
-identified.</p>
+<div id="interpretation-1" class="section level3">
+<h3>Interpretation</h3>
+<p>No duplicated IDs or fully duplicated rows were identified.</p>
 </div>
 </div>
 <div id="observation-quality-and-coordinate-obscuration" class="section level2">
@@ -541,7 +536,7 @@ prop.table(table(df_deer$coordinates_obscured)) * 100</code></pre>
 <pre><code>## 
 ##    FALSE     TRUE 
 ## 84.52546 15.47454</code></pre>
-<div id="interpretation-1" class="section level3">
+<div id="interpretation-2" class="section level3">
 <h3>Interpretation</h3>
 <p>Among the 16,595 white-tailed deer observations, 15,737 (94.83%) are
 classified as Research Grade, while 604 (3.64%) are Needs ID and 254
@@ -585,8 +580,8 @@ and all observations have publicly available geographic coordinates.
 However, 66 records have missing observation dates, and 2,568 records
 (15.47%) have obscured coordinates. Positional accuracy information is
 also incomplete. After restricting the data to 2010–2020, 2,891
-observations were retained. Additional cleaning decisions and coordinate
-validation results are documented in the following sections.</p>
+observations were retained. Additional cleaning results are documented
+in the following sections.</p>
 </div>
 </div>
 <div id="select-variables-and-export-cleaned-data" class="section level2">
