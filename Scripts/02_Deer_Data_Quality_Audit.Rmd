@@ -1,0 +1,161 @@
+---
+title: "Week 2 - Deer Data Quality Audit"
+author: "Ruixin Yang"
+date: "2026-10-22"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+
+## 1. Import White-tailed deer Data
+
+library(readr)
+
+# Import white-tailed deer observations
+df_deer <- read_csv(
+  "data/raw/NC_WhiteTailedDeer_iNaturalist_public.csv"
+)
+
+# Check dimensions
+dim(df_deer)
+
+# Check variable names
+names(df_deer)
+
+```
+
+## 2. Missing Values Assessment
+
+```{r missing-values}
+# Count missing values for each variable
+missing_count <- colSums(is.na(df_deer))
+
+# Display missing value counts
+missing_count
+
+# Calculate missing percentages
+missing_percent <- colMeans(is.na(df_deer)) * 100
+
+# Create a summary table
+missing_summary <- data.frame(
+  Variable = names(df_deer),
+  Missing_Count = missing_count,
+  Missing_Percent = round(missing_percent, 2)
+)
+
+missing_summary
+
+```
+### Interpretation 
+
+This dataset contains 16,595 observations and 37 variables. No missing values for both latitude and longitude. However, 66 observations (0.40%) are missing observation dates. In addition, 3,165 observations (19.07%) are missing positional accuracy information, while 1,938 (11.68%) are missing public positional accuracy information. Several non-essential variables, including sound_url, tag_list, and description, have high proportions of missing values. They are not required for the planned spatial analysis. Overall, the dataset has complete geographic coordinate fields. No observations were removed during this initial assessment.
+
+## 3. Duplicate Observations
+
+```{r duplicate-check}
+
+# Total number of observations
+nrow(df_deer)
+
+# Number of unique observation IDs
+length(unique(df_deer$id))
+
+# Count duplicate observation IDs
+sum(duplicated(df_deer$id))
+
+# Check fully duplicated rows
+sum(duplicated(df_deer))
+```
+
+### Interperation
+
+This dataset contains 16,595 observations with 16,595 unique observation IDs. No duplicated IDs or fully duplicated rows were identified.
+
+## 4. Observation Quality and Coordinate Obscuration
+
+```{r quality-check}
+
+# Count observations by quality grade
+table(df_deer$quality_grade)
+
+# Count observations with obscured coordinates
+table(df_deer$coordinates_obscured, useNA = "ifany")
+
+# Calculate percentages of obscured coordinates
+prop.table(table(df_deer$coordinates_obscured)) * 100
+
+```
+
+### Interpretation
+
+Among the 16,595 white-tailed deer observations, 15,737 (94.83%) are classified as Research Grade, while 604 (3.64%) are Needs ID and 254 (1.53%) are Casual. Additionally, 2,568 observations (15.47%) have obscured coordinates, 14,027 (84.53%) have unobscured coordinates. Our research focuses on the spatial relationship between deer observations and the wildland-urban interface, obscured coordinates may reduce the accuracy of spatial comparisons.
+
+## 5. Temporal Filtering (2010–2020)
+
+```{r temporal-filter}
+
+# Keep observations from 2010 to 2020
+df_deer_filtered <- df_deer[
+  !is.na(df_deer$observed_on) &
+  df_deer$observed_on >= as.Date("2010-01-01") &
+  df_deer$observed_on <= as.Date("2020-12-31"),
+]
+
+# Extract observation year
+df_deer_filtered$year <- as.integer(
+  format(df_deer_filtered$observed_on, "%Y")
+)
+
+# Check the number of remaining observations
+nrow(df_deer_filtered)
+
+# Check the date range
+range(df_deer_filtered$observed_on, na.rm = TRUE)
+
+# Count observations by year
+table(df_deer_filtered$year)
+```
+### Data Quality Summary
+
+The original dataset contains 16,595 white-tailed deer observations. No duplicate observation IDs or fully duplicated rows were identified, and all observations have publicly available geographic coordinates. However, 66 records have missing observation dates, and 2,568 records (15.47%) have obscured coordinates. Positional accuracy information is also incomplete. After restricting the data to 2010–2020, 2,891 observations were retained. Additional cleaning decisions and coordinate validation results are documented in the following sections.
+
+
+## 6. Select Variables and Export Cleaned Data
+
+```{r select-export}
+
+# Select variables relevant to the analysis
+df_deer_clean <- df_deer_filtered[, c(
+  "id",
+  "observed_on",
+  "year",
+  "time_observed_at",
+  "latitude",
+  "longitude",
+  "quality_grade",
+  "coordinates_obscured"
+)]
+
+# Check cleaned dataset dimensions
+dim(df_deer_clean)
+
+# Create processed data folder
+dir.create("data/processed", recursive = TRUE, showWarnings = FALSE)
+
+# Export cleaned dataset
+write_csv(
+  df_deer_clean,
+  "data/processed/NC_Deer_Cleaned_2010_2020.csv"
+)
+
+```
+
+```
+
+
+```
+
+```
+
