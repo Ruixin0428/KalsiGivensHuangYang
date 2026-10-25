@@ -91,3 +91,61 @@ The supplied projection metadata identifies the coordinate system as **NAD 1983 
 - The supplied DBF attribute table contains 34 fields.
 - The source metadata gives conflicting buffer distances: the `BUFVEG` field definition specifies 2.14 km, while the processing history specifies 2,414 meters (2.414 km). This discrepancy is retained rather than assuming one value is correct.
 - The supplied metadata does not explicitly define `OCCHUDEN20` or `VACHUDEN20`, nor does it provide a complete WUI flag code lookup table. These details should be confirmed with the data provider if exact definitions are required.
+
+## Data Dictionary- iNaturalist NC Deer Dataset
+
+### Dataset Overview
+
+This dataset contains cleaned deer observation records from iNaturalist for North Carolina, covering the intended study period of 2010–2020. The dataset includes observation identifiers, dates, geographic coordinates, observation quality grades, and coordinate privacy information.
+
+**Data source:** iNaturalist.
+
+## Data Source
+
+This analysis uses the cleaned North Carolina deer observation dataset, `NC_Deer_Cleaned_2010_2020.csv`.
+
+**Official terminology:** [iNaturalist Terminology](https://www.inaturalist.org/terminology)
+
+Variable definitions are based on the official iNaturalist terminology where available. Fields not explicitly defined in the supplied documentation are described according to their role in the cleaned dataset.
+
+### Unit of Observation
+
+Each row represents one iNaturalist observation record included in the cleaned dataset. A row represents an observation, not necessarily a unique individual deer.
+
+### Variable Definitions
+
+| Variable | Unit of Measurement | Definition |
+|---|---|---|
+| `id` | Unique identifier | Identifier associated with the iNaturalist observation. |
+| `observed_on` | Date | Date on which the observation occurred. |
+| `year` | Calendar year | Year associated with the observation date. |
+| `time_observed_at` | Date and time | Date and time associated with the observation. |
+| `latitude` | Decimal degrees | Latitude coordinate associated with the observation location. |
+| `longitude` | Decimal degrees | Longitude coordinate associated with the observation location. |
+| `quality_grade` | Categorical | iNaturalist quality classification for the observation, such as `research` or `needs_id`. |
+| `coordinates_obscured` | Boolean (`TRUE`/`FALSE`) | Indicates whether the observation's coordinates have been obscured. |
+
+### Observation Quality
+
+The `quality_grade` variable describes the quality classification assigned to an observation by iNaturalist.
+
+- **Research:** An observation classified as research grade by iNaturalist.
+- **Needs ID:** An observation classified as needing further identification.
+
+These categories describe the observation's quality status and do not, by themselves, establish that every record has been independently verified.
+
+### Geographic Coordinates
+
+The `latitude` and `longitude` variables describe the geographic location associated with each observation.
+
+- **Latitude:** North–south geographic position, expressed in decimal degrees.
+- **Longitude:** East–west geographic position, expressed in decimal degrees.
+- **Coordinate privacy:** The `coordinates_obscured` field indicates whether the observation's coordinates have been obscured. Publicly displayed coordinates may not show the exact observation location.
+
+### Documentation Notes
+
+- The supplied CSV contains eight variables.
+- The filename indicates an intended study period of 2010–2020, but the filename alone does not confirm that every record falls within this period.
+- The `year` variable is described according to its role in the cleaned dataset; the supplied iNaturalist terminology page does not specify how this field was created.
+- The precise format and time-zone handling of `time_observed_at` should be confirmed from the original export or data-processing steps if needed.
+- Variable definitions follow the [official iNaturalist terminology documentation](https://www.inaturalist.org/terminology) where supported. Definitions inferred from the cleaned dataset are not presented as direct definitions from iNaturalist.
