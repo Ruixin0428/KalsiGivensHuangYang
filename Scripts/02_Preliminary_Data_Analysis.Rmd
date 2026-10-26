@@ -1,0 +1,122 @@
+---
+title: "Preliminary Data Analysis of White-Tailed Deer Data"
+output: html_document
+date: "2026-10-26"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Loading Data
+
+```{r load data}
+##load in packages 
+#install.packages("tidyverse")
+#install.packages("ggplot2")
+#install.packages("here")
+
+library(tidyverse)
+library(ggplot2)
+library(here)
+
+## Loading in cleaned CSV from Reixin
+here()
+deer2 <- read.csv("data/processed/NC_Deer_Cleaned_2010_2020.csv")
+
+##examining date column 
+glimpse(deer2)
+
+```
+
+```{r theme}
+
+jasleen_theme <- theme_classic(base_size = 12) +
+  theme(
+    plot.title.position = "plot",
+    plot.title = element_text(face = "bold", color = "navy", hjust = 0.5),
+    panel.grid.minor = element_blank(),
+    legend.position = "right",
+    axis.text = element_text(color = "gray20")
+
+```
+
+## Further Processing
+
+```{r process, echo=FALSE}
+## Group deer observations by year and plot
+
+deer2 <- deer2 |>
+  group_by(year) |>
+  mutate(
+    year = factor(year)
+  ) |>
+  summarise( 
+    count = n()
+  ) 
+
+
+ggplot(data = deer2, aes(x = year, y = count, group = 1)) +
+  geom_point() +
+  geom_line() +
+  labs(
+    title = "White Tailed Deer Observations in North Carolina 
+    Increase Each year",
+    x = "Year",
+    y = "Number of Observations"
+  ) + jasleen_theme
+
+
+
+```
+
+## Calculating Change Variable
+
+```{r change}
+
+## calc change in observations per year 
+
+changeindeer <- deer2 |>
+  arrange(year) |>
+  mutate(
+    change_in_observation = count - lag(count)
+  ) |>
+  ungroup() 
+
+##creating periods to plot 
+
+changeindeer$period <- ifelse(
+  changeindeer$year == 2010,
+  "2009 to 2010",
+  NA
+)
+changeindeer$period = ifelse(changeindeer$year == 2011, "2010 to 2011", changeindeer$period)
+changeindeer$period = ifelse(changeindeer$year == 2012, "2011 to 2012", changeindeer$period)
+changeindeer$period = ifelse(changeindeer$year == 2013, "2012 to 2013", changeindeer$period)
+changeindeer$period = ifelse(changeindeer$year == 2014, "2013 to 2014", changeindeer$period)
+changeindeer$period = ifelse(changeindeer$year == 2015, "2014 to 2015", changeindeer$period)
+changeindeer$period = ifelse(changeindeer$year == 2016, "2015 to 2016", changeindeer$period)
+changeindeer$period = ifelse(changeindeer$year == 2017, "2016 to 2017", changeindeer$period)
+changeindeer$period = ifelse(changeindeer$year == 2018, "2017 to 2018", changeindeer$period)
+changeindeer$period = ifelse(changeindeer$year == 2019, "2018 to 2019", changeindeer$period)
+changeindeer$period = ifelse(changeindeer$year == 2020, "2019 to 2020", changeindeer$period)
+changeindeer$period = as.factor(changeindeer$period)
+
+## filter out 2010
+changeindeer = changeindeer |>
+  filter(year != 2010)
+
+#plot
+ggplot(data = changeindeer, aes(x = period, y = count, group = 1)) +
+  geom_point() +
+  geom_line() +
+  coord_flip() +
+  labs(
+    title = "Change in White Tailed Deer Observations 
+    in North Carolina Increase Each Year",
+    x = "Year",
+    y = "Number of Observations"
+  ) + jasleen_theme
+```
+
+> The first plot shows that deer observations between 2010-2020 have increased each year. The change in deer observations follows a similar trend, as it increases year to year. The highest increases of deer observations occurs between 2017-2020. We will compare the change in observations to the change in vegetation and urban landscapes during this decade as well with the WUI dataset. An important limitation is because our data is purely observational, there is a sampling bias present. Just because deer observations have increased in the decade, that does not mean that deer populations also increased. However, it is interesting to see this increasing trend because maybe more land has been developed in areas that were previously forested, and maybe that is driving up the observations. We will continue to explore this.
