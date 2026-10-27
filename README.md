@@ -149,3 +149,27 @@ The `latitude` and `longitude` variables describe the geographic location associ
 - The `year` variable is described according to its role in the cleaned dataset; the supplied iNaturalist terminology page does not specify how this field was created.
 - The precise format and time-zone handling of `time_observed_at` should be confirmed from the original export or data-processing steps if needed.
 - Variable definitions follow the [official iNaturalist terminology documentation](https://www.inaturalist.org/terminology) where supported. Definitions inferred from the cleaned dataset are not presented as direct definitions from iNaturalist.
+
+### WUI Data Access and Reproducibility
+
+The Wildland–Urban Interface (WUI) dataset is produced by SILVIS Lab at the University of Wisconsin–Madison. Our group accessed the dataset through the shared Duke Box Drive provided for this class. The original dataset is too large to store in this GitHub repository.
+
+**Official dataset download:** https://silvis.forest.wisc.edu/data/wui-change/
+
+**Dataset metadata:** https://geoserver.silvis.forest.wisc.edu/geodata/wui_change_2020_v4/CONUS_WUI_block_1990_2020_change_v4_FGDC_MetadataUpdate.html
+
+Students in the class can check the shared Duke Box Drive for the dataset. Alternatively, the North Carolina data can be obtained from the official 1990–2020 WUI Change Version 4 dataset.
+
+The existing spatial processing script expects a shapefile named `NC_wui_block_1990_2020_change_v4.shp` in `data/raw_large/`. Keep the shapefile and its associated files together in that directory.
+
+The spatial processing workflow is documented in `Scripts/Spacial Data Quality Audit.Rmd`. Reproducing its output requires access to the WUI source data and the R packages used by the script. Input and output paths may need to be adapted for the local computer before the script can run successfully.
+
+### iNaturalist Deer Data: Reproducibility
+
+The original iNaturalist white-tailed deer observations are stored in `data/raw/NC_WhiteTailedDeer_iNaturalist_public.csv`.
+
+The script `Scripts/02_Deer_Data_Quality_Audit.Rmd` imports the original dataset, assesses data quality, filters observations to dates from January 1, 2010, through December 31, 2020, and selects eight variables for the cleaned dataset: `id`, `observed_on`, `year`, `time_observed_at`, `latitude`, `longitude`, `quality_grade`, and `coordinates_obscured`.
+
+Running the code chunks in the script in order creates the processed dataset at `data/processed/NC_Deer_Cleaned_2010_2020.csv`.
+
+The workflow uses the `readr` R package. The original dataset is kept separate from the processed output. Each row represents an iNaturalist observation, not necessarily a unique individual deer.
