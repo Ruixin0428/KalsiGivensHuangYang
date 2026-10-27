@@ -1,0 +1,117 @@
+---
+title: "Spatial Data Quality Audit"
+author: "Sara Huang"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(sf)
+library(tigris)
+library(tidyverse)
+```
+
+# Data Import
+```{r}
+NC_Spatial <- st_read("/Users/huangyiping/KalsiGivensHuangYang/data/raw_large/NC_wui_block_1990_2020_change_v4.shp")
+NC_map <- counties(state = "NC", cb = TRUE)
+```
+
+# Data Info and Value Selection
+```{r}
+dim(NC_Spatial)
+names(NC_Spatial)
+```
+## Interpretation
+
+This dataset contains 266414 rows and 35 columns. For comparison between years, only six variables with data in both 2010 and 2020 or in 2011 and 2019 are selected: HU2010, HU2020, HUDEN2010, HUDEN2020, VEG2011PC, VEG2019PC.
+
+# Missing Value Assessment
+```{r}
+missing_count=colSums(is.na(NC_Spatial))
+missing_percent=colMeans(is.na(NC_Spatial)) * 100
+missing_summary <- data.frame(
+  Variable = names(NC_Spatial),
+  Missing_Count = missing_count,
+  Missing_Percent = round(missing_percent, 2)
+)
+missing_summary
+```
+## Interpretation 
+
+No missing values across all variables.
+
+# 3. Duplicate Observations
+
+```{r}
+nrow(NC_Spatial)
+length(unique(NC_Spatial$BLK20))
+sum(duplicated(NC_Spatial$BLK20))
+sum(duplicated(NC_Spatial))
+```
+## Interpretation 
+
+There is duplication on Block codes, due to the separated assessment between land and water region of a block. However, since none of the two rows have exact same values, the duplication would not cause problems for analysis. 
+
+# Data Wrangling
+```{r}
+NC_Spatial_county <- NC_Spatial %>% 
+  select(BLK20, HU2010, HU2020, HUDEN2010, HUDEN2020, VEG2011PC, VEG2019PC, geometry) %>%
+  mutate(BLK20 = str_sub(BLK20, start = 1, end = 5)) %>%
+  rename("County" = BLK20) %>%
+  group_by(County) %>%
+  summarise(HU2010 = sum(HU2010),
+            HU2020 = sum(HU2020),
+            HUDEN2010 = sum(HUDEN2010),
+            HUDEN2020 = sum(HUDEN2020),
+            VEG2011PC = sum(VEG2011PC),
+            VEG2019PC = sum(VEG2019PC),
+            geometry = st_union(geometry)) %>%
+  mutate(HU_dif = HU2020-HU2010,
+         HUDEN_dif = HUDEN2020-HUDEN2010,
+         VEG_dif = VEG2019PC-VEG2011PC)
+```
+
+# Data Join
+
+## Before Join
+```{r}
+dim(NC_map)
+names(NC_map)
+dim(NC_Spatial_county)
+names(NC_Spatial_county)
+```
+
+### Interpretation
+
+Before data join, NC_map has 100 rows and 13 columns. NC_Spatial_county has 100 rows and 11 columns. The two datasets will be joined by the county codes (GEOID column from NC_map and County column from NC_Spatial_county).
+
+```{r}
+NC_map_joined <- NC_map %>%
+  mutate(GEOID = as.character(GEOID)) %>% 
+  left_join(as.data.frame(NC_Spatial_county), 
+    by = c("GEOID" = "County"))
+```
+
+## After Join
+```{r}
+dim(NC_map_joined)
+names(NC_map_joined)
+```
+
+### Interpretation
+
+Before data joining, NC_map_joined has 100 rows and 23 columns, which matches up with the original two datasets.
+
+# Processed Data Export
+```{r, warning=FALSE, message=FALSE}
+dir.create("data/processed", recursive = TRUE, showWarnings = FALSE)
+st_write(
+  NC_map_joined,
+  "/Users/huangyiping/KalsiGivensHuangYang/data/processed/NC_map_joined.shp")
+```
+
+
+
+
