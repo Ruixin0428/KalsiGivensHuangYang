@@ -152,7 +152,9 @@ The `latitude` and `longitude` variables describe the geographic location associ
 
 ### WUI Data Access and Reproducibility
 
-The Wildland–Urban Interface (WUI) dataset is produced by SILVIS Lab at the University of Wisconsin–Madison. Our group accessed the dataset through the shared Duke Box Drive provided for this class. The original dataset is too large to store in this GitHub repository.
+#### Data Source and Access
+
+The Wildland–Urban Interface (WUI) dataset was produced by SILVIS Lab at the University of Wisconsin–Madison. Our group accessed the dataset through the shared Duke Box Drive provided for this class. The original source data are too large to store in this shared GitHub repository.
 
 **Official dataset download:** https://silvis.forest.wisc.edu/data/wui-change/
 
@@ -160,16 +162,97 @@ The Wildland–Urban Interface (WUI) dataset is produced by SILVIS Lab at the Un
 
 Students in the class can check the shared Duke Box Drive for the dataset. Alternatively, the North Carolina data can be obtained from the official 1990–2020 WUI Change Version 4 dataset.
 
-The existing spatial processing script expects a shapefile named `NC_wui_block_1990_2020_change_v4.shp` in `data/raw_large/`. Keep the shapefile and its associated files together in that directory.
+#### Input Data and Requirements
 
-The spatial processing workflow is documented in `Scripts/Spacial Data Quality Audit.Rmd`. Reproducing its output requires access to the WUI source data and the R packages used by the script. Input and output paths may need to be adapted for the local computer before the script can run successfully.
+The spatial processing workflow is documented in `Scripts/Spacial Data Quality Audit.Rmd`. It requires the North Carolina WUI shapefile, expected at:
+
+`data/raw_large/NC_wui_block_1990_2020_change_v4.shp`
+
+The shapefile's associated files must be kept together in the same directory. The workflow also obtains North Carolina county boundaries using the `counties()` function from the `tigris` package.
+
+The R packages used by the workflow are `sf`, `tigris`, and `tidyverse`.
+
+#### Data Processing
+
+The workflow performs the following steps:
+
+1. Imports the North Carolina WUI spatial dataset and obtains North Carolina county boundaries.
+2. Examines the dataset dimensions, variable names, missing values, and duplicate observations.
+3. Selects the variables `BLK20`, `HU2010`, `HU2020`, `HUDEN2010`, `HUDEN2020`, `VEG2011PC`, and `VEG2019PC`, along with the spatial geometry.
+4. Extracts the first five characters of `BLK20` to create a county identifier and renames the field `County`.
+5. Groups the data by county and sums the selected housing, housing-density, and vegetation variables. The geometries are combined using `st_union()`.
+6. Calculates three change variables:
+   - `HU_dif`: `HU2020 - HU2010`, the change in housing units from 2010 to 2020.
+   - `HUDEN_dif`: `HUDEN2020 - HUDEN2010`, the change in housing-unit density from 2010 to 2020.
+   - `VEG_dif`: `VEG2019PC - VEG2011PC`, the difference in wildland vegetation percentage between 2011 and 2019.
+7. Joins the county-level WUI results to North Carolina county boundaries using the county identifier (`County`) and the boundary dataset's `GEOID` field.
+
+#### Processed Output
+
+The workflow exports the joined spatial dataset as `NC_map_joined.shp` in `data/processed/`.
+
+The shapefile consists of multiple associated files, including:
+
+- `NC_map_joined.shp` — spatial features and geometry.
+- `NC_map_joined.dbf` — attribute table.
+- `NC_map_joined.shx` — geometry index.
+- `NC_map_joined.prj` — coordinate reference system information.
+
+These files must be kept together for the shapefile to remain usable.
+
+The resulting dataset contains county-level geometries and the selected WUI variables, including the three calculated change variables. It supports mapping changes in housing units, housing-unit density, and wildland vegetation across North Carolina counties.
+
+#### Reproducing the Workflow
+
+To reproduce the processed WUI dataset:
+
+1. Obtain the source WUI data through the shared Duke Box Drive or the official SILVIS download page.
+2. Place the North Carolina shapefile and its associated files in `data/raw_large/`, using the expected filename.
+3. Ensure the required R packages are installed.
+4. Open the RStudio project and run the code chunks in `Scripts/Spacial Data Quality Audit.Rmd` in order.
+5. Confirm that the workflow completes and creates the output files in `data/processed/`.
+
+The script currently uses file paths specific to the computer on which it was developed. The group plans to run the workflow on that computer, so the existing paths have been retained.
+
+#### Data Limitations and Reproducibility Notes
+
+The source data quality audit reports no missing values in the WUI attributes. It also identifies repeated `BLK20` identifiers, which the script attributes to separate land and water portions of a block. The script reports that these rows are not exact duplicates.
+
+The processing workflow aggregates the selected variables by county. The resulting county level dataset does not preserve the original block level records as separate analytical units.
+
+The vegetation comparison uses 2011 and 2019, while the housing and housing density comparisons use 2010 and 2020. These periods should be kept distinct when interpreting the maps.
+
+The processed dataset is an input for further analysis; it does not, by itself, establish a relationship between deer observations and WUI change.
 
 ### iNaturalist Deer Data: Reproducibility
 
-The original iNaturalist white-tailed deer observations are stored in `data/raw/NC_WhiteTailedDeer_iNaturalist_public.csv`.
+#### Data Source and Input
 
-The script `Scripts/02_Deer_Data_Quality_Audit.Rmd` imports the original dataset, assesses data quality, filters observations to dates from January 1, 2010, through December 31, 2020, and selects eight variables for the cleaned dataset: `id`, `observed_on`, `year`, `time_observed_at`, `latitude`, `longitude`, `quality_grade`, and `coordinates_obscured`.
+The original iNaturalist white tailed deer observations are stored in `data/raw/NC_WhiteTailedDeer_iNaturalist_public.csv`. The dataset contains reported deer observations in North Carolina.
 
-Running the code chunks in the script in order creates the processed dataset at `data/processed/NC_Deer_Cleaned_2010_2020.csv`.
+#### Data Processing
 
-The workflow uses the `readr` R package. The original dataset is kept separate from the processed output. Each row represents an iNaturalist observation, not necessarily a unique individual deer.
+The data cleaning workflow is documented in `Scripts/02_Deer_Data_Quality_Audit.Rmd`. The script imports the original dataset, assesses data quality, filters observations to dates from January 1, 2010, through December 31, 2020, and selects eight variables for the cleaned dataset:
+
+- `id`
+- `observed_on`
+- `year`
+- `time_observed_at`
+- `latitude`
+- `longitude`
+- `quality_grade`
+- `coordinates_obscured`
+
+The workflow uses the `readr` R package.
+
+#### Processed Output
+
+Running the code chunks in `Scripts/02_Deer_Data_Quality_Audit.Rmd` in order is intended to create the cleaned dataset at `data/processed/NC_Deer_Cleaned_2010_2020.csv`.
+
+The original dataset is kept separate from the processed output. Each row represents an iNaturalist observation, not necessarily a unique individual deer.
+
+#### Reproducibility Notes
+
+The original CSV must be available at the specified path before running the script. The workflow should be run from the repository root so that relative file paths resolve correctly.
+
+iNaturalist observations reflect reported sightings and may be affected by differences in observation effort, access, and coordinate privacy. Changes in observation counts should not be interpreted as direct evidence of changes in deer population size.
