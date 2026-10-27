@@ -19,6 +19,8 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(ggplot2)
 library(here)
+library(sf)
+library(tigris)
 
 ## Loading in cleaned CSV from Reixin
 here()
@@ -37,8 +39,7 @@ jasleen_theme <- theme_classic(base_size = 12) +
     plot.title = element_text(face = "bold", color = "navy", hjust = 0.5),
     panel.grid.minor = element_blank(),
     legend.position = "right",
-    axis.text = element_text(color = "gray20")
-
+    axis.text = element_text(color = "gray20"))
 ```
 
 ## Further Processing
@@ -120,3 +121,103 @@ ggplot(data = changeindeer, aes(x = period, y = count, group = 1)) +
 ```
 
 > The first plot shows that deer observations between 2010-2020 have increased each year. The change in deer observations follows a similar trend, as it increases year to year. The highest increases of deer observations occurs between 2017-2020. We will compare the change in observations to the change in vegetation and urban landscapes during this decade as well with the WUI dataset. An important limitation is because our data is purely observational, there is a sampling bias present. Just because deer observations have increased in the decade, that does not mean that deer populations also increased. However, it is interesting to see this increasing trend because maybe more land has been developed in areas that were previously forested, and maybe that is driving up the observations. We will continue to explore this.
+
+# Spatial Data Maps
+
+## Spatial Data Import
+```{r}
+NC_map <- st_read("/Users/huangyiping/KalsiGivensHuangYang/data/processed/NC_map_joined.shp")
+```
+## Map Plotting
+
+### HU_dif Map
+```{r}
+map_HU_dif = ggplot(data=NC_map) + 
+  geom_sf(color = "black", linewidth = 0.5, aes(fill = HU_dif)) + 
+  scale_fill_gradient2(low="darkblue",high="red", midpoint = 0) +
+  theme_bw() +
+  labs(title = "Changes in Housing Units from 2010 to 2020 in NC by Counties",
+       fill = "Difference")
+map_HU_dif
+```
+
+### HUDEN_dif Map
+```{r}
+map_HUDEN_dif = ggplot(data=NC_map) + 
+  geom_sf(color = "black", linewidth = 0.5, aes(fill = HUDEN_dif)) + 
+  scale_fill_gradient2(low="darkblue",high="red", midpoint = 0) +
+  theme_bw() +
+  labs(title = "Changes in Housing Units Density from 2010 to 2020 in NC by Counties",
+       fill = "Difference")
+map_HUDEN_dif
+```
+
+### VEG_dif Map
+```{r}
+map_VEG_dif = ggplot(data=NC_map) + 
+  geom_sf(color = "black", linewidth = 0.5, aes(fill = VEG_dif)) + 
+  scale_fill_gradient2(low="darkblue",high="red", midpoint = 0) +
+  theme_bw() +
+  labs(title = "Changes in Vegetation Cover from 2011 to 2019 in NC by Counties",
+       fill = "Difference")
+map_VEG_dif
+```
+
+## Interpretation
+
+The three maps indicates that in counties that more housing units were build between 2010 to 2020, the housing unit density also increased, and the vegatation coverage decreased.
+
+# Deer Map
+
+## Data Import
+```{r, warning=FALSE, message=FALSE}
+df_deer <- read_csv("/Users/huangyiping/KalsiGivensHuangYang/data/raw/NC_WhiteTailedDeer_iNaturalist_public.csv")
+```
+
+## Data Wrangling
+```{r}
+df_deer_spatial <- df_deer[
+  !is.na(df_deer$observed_on) &
+  df_deer$observed_on >= as.Date("2010-01-01") &
+  df_deer$observed_on <= as.Date("2020-12-31"),] %>%
+  mutate(year = as.integer(format(observed_on, "%Y"))) %>%
+  select(observed_on, year, longitude, latitude) %>%
+  mutate(year = as.character(year)) %>%
+  st_as_sf(coords = c('longitude','latitude'), crs=4269)
+```
+
+## Mapping
+```{r}
+map_deer = ggplot(data=df_deer_spatial, aes(color = year)) + 
+  geom_sf(size = 2, alpha=0.5) + 
+  theme_bw() +
+  labs(title = "Distribution of White-tailed Deer in NC from 2010 to 2020")
+map_deer
+```
+```{r}
+map_deer_2010 = ggplot(data=df_deer_spatial%>%filter(year == "2010")) + 
+  geom_sf(size = 2, alpha=0.5) + 
+  theme_bw() +
+  labs(title = "Distribution of White-tailed Deer in NC in 2010")
+map_deer_2010
+```
+```{r}
+map_deer_2020 = ggplot(data=df_deer_spatial%>%filter(year == "2020")) + 
+  geom_sf(size = 2, alpha=0.5) + 
+  theme_bw() +
+  labs(title = "Distribution of White-tailed Deer in NC in 2020")
+map_deer_2020
+```
+
+## Interpretation
+
+The observation distribution of white-tailed deer from 2010 to 2020 is well-spread across NC. However, there are much fewer data points for observation in 2010, which we need to take into account while analyzing the deer distribution against human development.
+
+
+
+
+
+
+
+
+
