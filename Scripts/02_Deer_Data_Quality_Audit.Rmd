@@ -17,13 +17,14 @@ library(readr)
 df_deer <- read_csv(
   "data/raw/NC_WhiteTailedDeer_iNaturalist_public.csv"
 )
+```
 
+```{r}
 # Check dimensions
 dim(df_deer)
 
 # Check variable names
 names(df_deer)
-
 ```
 
 ## 2. Missing Values Assessment
