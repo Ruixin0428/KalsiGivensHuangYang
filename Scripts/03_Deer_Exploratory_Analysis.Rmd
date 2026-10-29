@@ -7,24 +7,191 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+# Load the cleaned deer dataset
+library(readr)
+
+df_deer_clean <- read_csv(
+  "data/processed/NC_Deer_Cleaned_2010_2020.csv"
+)
+
+# Check the dataset
+dim(df_deer_clean)
+head(df_deer_clean)
 ```
 
-## R Markdown
+```{r counting observations by year}
+# Count deer observations by year
+annual_counts <- as.data.frame(
+  table(df_deer_clean$year)
+)
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+# Rename columns
+names(annual_counts) <- c("Year", "Observations")
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+# Convert year and count to numeric
+annual_counts$Year <- as.integer(
+  as.character(annual_counts$Year)
+)
 
-```{r cars}
-summary(cars)
+annual_counts$Observations <- as.integer(
+  annual_counts$Observations
+)
+
+# View the summary table
+annual_counts
+
 ```
 
-## Including Plots
+```{r figure 1}
 
-You can also embed plots, for example:
+# Figure 1: Annual white-tailed deer observations in NC
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+plot(
+  annual_counts$Year,
+  annual_counts$Observations,
+  type = "o",
+  pch = 16,
+  col = "steelblue",
+  lwd = 2,
+  xlab = "Year",
+  ylab = "Number of observations",
+  main = "Annual White-tailed Deer Observations in North Carolina",
+  xaxt = "n"
+)
+
+axis(
+  1,
+  at = 2010:2020,
+  labels = 2010:2020
+)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+### Figure 1. Annual White-tailed Deer Observations in North Carolina (2010–2020)
+Question: How did the number of recorded white-tailed deer observations change from 2010 to 2020?
+Observed pattern: The annual number of observations increased (12 records in 2010 to 1,048 in 2020).
+Units: Number of iNaturalist observation records per year.
+Limitation: The observed numbers do not equate to the actual number of deer populations. This trend may merely indicate an increase in people's participation on the iNaturalist platform, rather than an actual growth in the deer population.
+
+```{r assign the deer observations to the counties}
+# Convert deer coordinates into spatial points
+deer_sf <- st_as_sf(
+  df_deer_clean,
+  coords = c("longitude", "latitude"),
+  crs = 4326,
+  remove = FALSE
+)
+
+# Match the coordinate system of the county map
+deer_sf <- st_transform(deer_sf, st_crs(nc_map))
+
+# Assign each deer observation to a county
+deer_county <- st_join(
+  deer_sf,
+  nc_map[, c("NAME", "GEOID")],
+  join = st_within,
+  left = TRUE
+)
+
+# Preview the results
+head(st_drop_geometry(deer_county)[, c("id", "NAME", "GEOID")])
+```
+
+```{r figure 2}
+# Count deer observations by county
+county_counts <- as.data.frame(
+  table(deer_county$NAME)
+)
+
+# Rename columns
+names(county_counts) <- c("NAME", "deer_count")
+
+# Convert counts to numeric
+county_counts$deer_count <- as.integer(county_counts$deer_count)
+
+# Preview
+head(county_counts)
+
+# Join deer counts to county boundaries
+nc_map$deer_count <- county_counts$deer_count[
+  match(nc_map$NAME, county_counts$NAME)
+]
+
+# Counties with no observations should have a count of zero
+nc_map$deer_count[is.na(nc_map$deer_count)] <- 0
+
+# Figure 2: Deer observations by county
+plot(
+  nc_map["deer_count"],
+  main = "White-tailed Deer Observations by County in NC",
+  pal = colorRampPalette(c("lightblue", "darkblue")),
+  key.pos = 4,
+  axes = FALSE,
+  reset = FALSE
+)
+```
+
+### Figure 2. Spatial Distribution of White-tailed Deer Observations by County in North Carolina (2010–2020)
+Question: How are white-tailed deer observations distributed across North Carolina counties?
+Observed pattern: Deer observations were unevenly distributed across counties.
+Units: Number of iNaturalist deer observation records per county.
+Limitation: Observation counts were not adjusted for county area or differences in observer. Additionally, 33 observations could not be assigned to a county and were excluded from this map. Therefore, higher observation counts do not necessarily indicate higher deer population density.
+
+```{r summary table}
+
+# Summary table for all 100 counties
+all_counties <- data.frame(
+  County = nc_map$NAME,
+  Observations = nc_map$deer_count
+)
+
+# Sort from highest to lowest
+all_counties <- all_counties[
+  order(-all_counties$Observations),
+]
+
+knitr::kable(
+  all_counties,
+  row.names = FALSE,
+  caption = "Deer Observations by County (2010–2020)"
+)
+
+# Top 10 counties by deer observations
+
+county_top10 <- county_counts[
+  order(county_counts$deer_count, decreasing = TRUE),
+][1:10, ]
+
+# Add ranking
+county_top10 <- data.frame(
+  Rank = 1:10,
+  County = county_top10$NAME,
+  Observations = county_top10$deer_count
+)
+
+# Display as a formatted table
+knitr::kable(
+  county_top10,
+  caption = "Top 10 NC Counties by White-tailed Deer Observations (2010–2020)",
+  row.names = FALSE
+)
+
+# Horizontal bar chart for top 10 counties
+par(mar = c(5, 12, 4, 2))
+
+barplot(
+  rev(county_top10$Observations),
+  names.arg = rev(county_top10$County),
+  horiz = TRUE,
+  las = 1,
+  col = "steelblue",
+  cex.names = 0.8,
+  xlab = "Number of observations",
+  main = "Top 10 Counties by Deer Observations"
+)
+
+```
+### There main findings
+Temporal increase: Deer observation records increased substantially from 2010 to 2020, especially after 2016.
+Uneven spatial distribution: Observations were not evenly distributed across North Carolina counties.
+Concentration in a few counties: Wake (547), Orange (265), and Durham (188) together accounted for approximately 35% of county-assigned observations.
+
