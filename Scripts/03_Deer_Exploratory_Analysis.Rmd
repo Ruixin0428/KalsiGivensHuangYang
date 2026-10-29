@@ -9,6 +9,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 # Load the cleaned deer dataset
 library(readr)
+library(sf)
 
 df_deer_clean <- read_csv(
   "data/processed/NC_Deer_Cleaned_2010_2020.csv"
