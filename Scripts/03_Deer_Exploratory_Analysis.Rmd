@@ -74,6 +74,9 @@ Units: Number of iNaturalist observation records per year.
 Limitation: The observed numbers do not equate to the actual number of deer populations. This trend may merely indicate an increase in people's participation on the iNaturalist platform, rather than an actual growth in the deer population.
 
 ```{r assign the deer observations to the counties}
+# Load North Carolina county boundaries
+nc_map <- st_read("data/processed/NC_map_joined.shp")
+
 # Convert deer coordinates into spatial points
 deer_sf <- st_as_sf(
   df_deer_clean,
