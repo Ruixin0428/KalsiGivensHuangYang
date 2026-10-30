@@ -194,7 +194,7 @@ barplot(
 )
 
 ```
-### There main findings
+### Three main findings
 Temporal increase: Deer observation records increased substantially from 2010 to 2020, especially after 2016.
 Uneven spatial distribution: Observations were not evenly distributed across North Carolina counties.
 Concentration in a few counties: Wake (547), Orange (265), and Durham (188) together accounted for approximately 35% of county-assigned observations.
