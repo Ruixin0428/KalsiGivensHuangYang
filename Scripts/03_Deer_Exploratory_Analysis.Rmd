@@ -1,6 +1,6 @@
 ---
 title: "03_Deer_Exploratory_Analysis.Rmd"
-author: "Ruixin Yang"
+author: "Ruixin Yang and Sara Huang"
 date: "2026-10-29"
 output: html_document
 ---
@@ -10,16 +10,18 @@ knitr::opts_chunk$set(echo = TRUE)
 # Load the cleaned deer dataset
 library(readr)
 library(sf)
+library(tidyverse)
+library(ggplot2)
 
-df_deer_clean <- read_csv(
-  "data/processed/NC_Deer_Cleaned_2010_2020.csv"
-)
+df_deer_clean <- read_csv("data/processed/NC_Deer_Cleaned_2010_2020.csv")
+NC_map <- st_read("data/processed/NC_map_joined.shp")
 
 # Check the dataset
 dim(df_deer_clean)
 head(df_deer_clean)
 ```
 
+## Figures and Maps
 ```{r counting observations by year}
 # Count deer observations by year
 annual_counts <- as.data.frame(
@@ -83,12 +85,12 @@ deer_sf <- st_as_sf(
 )
 
 # Match the coordinate system of the county map
-deer_sf <- st_transform(deer_sf, st_crs(nc_map))
+deer_sf <- st_transform(deer_sf, st_crs(NC_map))
 
 # Assign each deer observation to a county
 deer_county <- st_join(
   deer_sf,
-  nc_map[, c("NAME", "GEOID")],
+  NC_map[, c("NAME", "GEOID")],
   join = st_within,
   left = TRUE
 )
@@ -113,16 +115,16 @@ county_counts$deer_count <- as.integer(county_counts$deer_count)
 head(county_counts)
 
 # Join deer counts to county boundaries
-nc_map$deer_count <- county_counts$deer_count[
-  match(nc_map$NAME, county_counts$NAME)
+NC_map$deer_count <- county_counts$deer_count[
+  match(NC_map$NAME, county_counts$NAME)
 ]
 
 # Counties with no observations should have a count of zero
-nc_map$deer_count[is.na(nc_map$deer_count)] <- 0
+NC_map$deer_count[is.na(NC_map$deer_count)] <- 0
 
 # Figure 2: Deer observations by county
 plot(
-  nc_map["deer_count"],
+  NC_map["deer_count"],
   main = "White-tailed Deer Observations by County in NC",
   pal = colorRampPalette(c("lightblue", "darkblue")),
   key.pos = 4,
@@ -141,8 +143,8 @@ Limitation: Observation counts were not adjusted for county area or differences 
 
 # Summary table for all 100 counties
 all_counties <- data.frame(
-  County = nc_map$NAME,
-  Observations = nc_map$deer_count
+  County = NC_map$NAME,
+  Observations = NC_map$deer_count
 )
 
 # Sort from highest to lowest
@@ -191,8 +193,133 @@ barplot(
 )
 
 ```
-### There main findings
+### Three main findings
 Temporal increase: Deer observation records increased substantially from 2010 to 2020, especially after 2016.
 Uneven spatial distribution: Observations were not evenly distributed across North Carolina counties.
 Concentration in a few counties: Wake (547), Orange (265), and Durham (188) together accounted for approximately 35% of county-assigned observations.
+
+```{r data Wrangling}
+df_deer_spatial <- df_deer_clean %>%
+  select(observed_on, year, longitude, latitude) %>%
+  mutate(year = as.character(year)) %>%
+  st_as_sf(coords = c('longitude','latitude'), crs=4269)
+df_deer_in_NC <- st_join(df_deer_spatial, NC_map, join = st_within) %>%
+  drop_na() %>%
+  mutate(development = ifelse(HU_dif > 0, "yes", "no"),
+         forest = ifelse(VEG_dif < 0, "dec", "inc")) %>%
+  group_by(NAME, year, development, forest) %>%
+  summarise(observation=n()) %>%
+  ungroup(year, development, forest) %>%
+  mutate(period = ifelse(year == "2016" | year == "2017" | year == "2018" | year == "2019", NA, 
+                         ifelse(year == "2020", "after", "before")))
+```
+
+```{r map 1}
+map_deer_in_NC = ggplot() + 
+  geom_sf(data = NC_map, color = "black", linewidth = 0.5, aes(fill = HU_dif)) + 
+  geom_sf(data = df_deer_spatial%>%filter(year == "2010" | year == "2011" | year == "2012" | year == "2013" | year == "2014" | year == "2015"), color = "cyan", size = 0.5, alpha = 0.5, stroke = 0.5) +
+  scale_fill_gradient(low="darkblue", high="red") +
+  labs(title = "Housing Unit Differnce by Counties with White-tailed Deer Observations before Development",
+       fill = "Difference",
+       caption = "Housing unit difference is calculated with data from 2020 subtracting data from 2010. Deer observation is the sum from 2010\nto 2015. The blue means unchanged or small increase of housing units in the counties, and the red means large increase.") +
+  theme_bw() +
+  theme(plot.title = element_text(size = 11.5),
+        plot.caption = element_text(hjust = 0))
+map_deer_in_NC
+```
+
+```{r mapn 2}
+map_deer_in_NC = ggplot() + 
+  geom_sf(data = NC_map, color = "black", linewidth = 0.5, aes(fill = HU_dif)) + 
+  geom_sf(data = df_deer_spatial%>%filter(year == "2016" | year == "2017" | year == "2018" | year == "2019" | year == "2020"), color = "cyan", size = 0.5, alpha = 0.3, stroke = 0.5) +
+  scale_fill_gradient(low="darkblue",high="red") +
+  labs(title = "Housing Unit Differnce by Counties with White-tailed Deer Observations after Development",
+       fill = "Difference",
+       caption = "Housing unit difference is calculated with data from 2020 subtracting data from 2010. Deer observation is from 2020. The\nblue means unchanged or small increase of housing units in the counties, and the red means large increase.") +
+  theme_bw() +
+  theme(plot.title = element_text(size = 12),
+        plot.caption = element_text(hjust = 0))
+map_deer_in_NC
+```
+
+```{r map 3}
+map_deer_in_NC = ggplot() + 
+  geom_sf(data = NC_map, color = "black", linewidth = 0.5, aes(fill = VEG_dif)) + 
+  geom_sf(data = df_deer_spatial%>%filter(year == "2010" | year == "2011" | year == "2012" | year == "2013" | year == "2014" | year == "2015"), color = "cyan", size = 0.5, alpha = 0.5, stroke = 0.5) +
+  scale_fill_gradient(low="yellow",high="#062D03") +
+  labs(title = "Vegetation Coverage Differnce by Counties with White-tailed Deer Observations before Development",
+       fill = "Difference",
+       caption = "Vegetation cover difference is calculated with data from 2020 subtracting data from 2010. Deer observation is the sum from\n2010 to 2015. The green means less destruction on vegatation, and the yellow means more destruction.") +
+  theme_bw() +
+  theme(plot.title = element_text(size = 10.5),
+        plot.caption = element_text(hjust = 0))
+map_deer_in_NC
+```
+
+```{r map 4}
+map_deer_in_NC = ggplot() + 
+  geom_sf(data = NC_map, color = "black", linewidth = 0.5, aes(fill = VEG_dif)) + 
+  geom_sf(data = df_deer_spatial%>%filter(year == "2016" | year == "2017" | year == "2018" | year == "2019" | year == "2020"), color = "cyan", size = 0.5, alpha = 0.3, stroke = 0.5) +
+  scale_fill_gradient(low="yellow",high="#062D03") +
+  labs(title = "Vegetation Coverage Differnce by Counties with White-tailed Deer Observations after Development",
+       fill = "Difference",
+       caption = "Vegetation coverage difference is calculated with data from 2020 subtracting data from 2010. Deer observation is from 2020.\nThe green means less destruction on vegatation, and the yellow means more destruction.") +
+  theme_bw() +
+  theme(plot.title = element_text(size = 10.5),
+        plot.caption = element_text(hjust = 0))
+map_deer_in_NC
+```
+### Map 1-4
+Question: How are white-tailed deer observations distributed across North Carolina counties with different development rate?
+Observed pattern: In terms of housing units, the deer observations before the development (2010-2015) spread out more than the once from 2020, which gather in 4 clusters in the counties with more housing units. For vegetation cover changes, the pattern is less obvious: deer observations cluster in both regions with high and low destruction.
+Units: Number of iNaturalist deer observation records per county.
+Limitation: There were fewer data for 2010 to 2015, so we decided to add all these years up and treat the sum as the pre-development deer distribution. Also, the increase in deer observation may not correlated to development itself, but the increase of people visiting the area and thus seeing more deer.
+
+## ANOVA
+```{r ANOVA Development}
+model_dev <- aov(log(observation) ~ period + development + period*development, data = df_deer_in_NC)
+TukeyHSD(model_dev)
+```
+
+```{r ANOVA Development Validity}
+fit_dev <- model_dev$fitted
+res_dev <- model_dev$res
+
+par(mfrow=c(2,2))
+boxplot(observation ~ development+period, data = df_deer_in_NC)
+qqnorm(res_dev, datax = TRUE)
+qqline(res_dev, col = "red", lwd = 2)
+plot(x = seq(1:length(res_dev)), y = res_dev, xlab="Order", ylab="Residuals")
+lines(x = seq(1:length(res_dev)), y = res_dev)
+abline(0,0)
+plot(fit_dev, res_dev, xlab="Fitted Values", ylab="Residuals")
+```
+
+```{r ANOVA Forest}
+model_forest <- aov(log(observation) ~ period + forest + period*forest, data = df_deer_in_NC)
+summary(model_forest)
+TukeyHSD(model_forest)
+```
+
+```{r ANOVA Forest Validity}
+fit_forest <- model_forest$fitted
+res_forest <- model_forest$res
+
+par(mfrow=c(2,2))
+boxplot(observation ~ forest+period, data = df_deer_in_NC)
+qqnorm(res_forest, datax = TRUE)
+qqline(res_forest, col = "red", lwd = 2)
+plot(x = seq(1:length(res_forest)), y = res_forest, xlab="Order", ylab="Residuals")
+lines(x = seq(1:length(res_forest)), y = res_forest)
+abline(0,0)
+plot(fit_forest, res_forest, xlab="Fitted Values", ylab="Residuals")
+```
+
+### ANOVA analysis
+Question: Are white-tailed deer observations distributed across North Carolina counties significantly different between counties with different development rate?
+We marked the deer observations from 2010-2015 as pre-development and the data from 2020 as post-development. To fit the ANOVA assumption, the data is natural log transformed. 
+For housing units, development, period, and their interaction are all significant on deer observation. The Tukey test shows that before the development, the deer observation does not have a significant difference in distribution across the counties. This is the only insignificant case. By contrast, after the development, the deer observation shows a significant difference in distribution across the counties with high and low development.
+For vegetation cover, forest clearing, period, and their interaction are all significant on deer observation. The Tukey test shows that vegetation cover before development does not have a significant difference on deer observation distribution. However, counties with decreased vegetation cover has a significant difference on deer observation distribution before and after the development. Moreover, after the development, the level of vegetation destruction is significant on deer observation distribution.
+
+
 
