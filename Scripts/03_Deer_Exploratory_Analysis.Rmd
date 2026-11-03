@@ -76,6 +76,9 @@ Units: Number of iNaturalist observation records per year.
 Limitation: The observed numbers do not equate to the actual number of deer populations. This trend may merely indicate an increase in people's participation on the iNaturalist platform, rather than an actual growth in the deer population.
 
 ```{r assign the deer observations to the counties}
+# Load North Carolina county boundaries
+nc_map <- st_read("data/processed/NC_map_joined.shp")
+
 # Convert deer coordinates into spatial points
 deer_sf <- st_as_sf(
   df_deer_clean,
@@ -193,6 +196,7 @@ barplot(
 )
 
 ```
+
 ### Three main findings
 Temporal increase: Deer observation records increased substantially from 2010 to 2020, especially after 2016.
 Uneven spatial distribution: Observations were not evenly distributed across North Carolina counties.
@@ -269,6 +273,7 @@ map_deer_in_NC = ggplot() +
         plot.caption = element_text(hjust = 0))
 map_deer_in_NC
 ```
+
 ### Map 1-4
 Question: How are white-tailed deer observations distributed across North Carolina counties with different development rate?
 Observed pattern: In terms of housing units, the deer observations before the development (2010-2015) spread out more than the once from 2020, which gather in 4 clusters in the counties with more housing units. For vegetation cover changes, the pattern is less obvious: deer observations cluster in both regions with high and low destruction.
@@ -317,7 +322,7 @@ plot(fit_forest, res_forest, xlab="Fitted Values", ylab="Residuals")
 
 ### ANOVA analysis
 Question: Are white-tailed deer observations distributed across North Carolina counties significantly different between counties with different development rate?
-We marked the deer observations from 2010-2015 as pre-development and the data from 2020 as post-development. To fit the ANOVA assumption, the data is natural log transformed. 
+We marked the deer observations from 2010-2015 as pre-development and the data from 2020 as post-development. To fit the ANOVA assumptions better, according to the validity plots, the data is natural log transformed. 
 For housing units, development, period, and their interaction are all significant on deer observation. The Tukey test shows that before the development, the deer observation does not have a significant difference in distribution across the counties. This is the only insignificant case. By contrast, after the development, the deer observation shows a significant difference in distribution across the counties with high and low development.
 For vegetation cover, forest clearing, period, and their interaction are all significant on deer observation. The Tukey test shows that vegetation cover before development does not have a significant difference on deer observation distribution. However, counties with decreased vegetation cover has a significant difference on deer observation distribution before and after the development. Moreover, after the development, the level of vegetation destruction is significant on deer observation distribution.
 
