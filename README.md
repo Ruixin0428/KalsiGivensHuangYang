@@ -256,3 +256,21 @@ The original dataset is kept separate from the processed output. Each row repres
 The original CSV must be available at the specified path before running the script. The workflow should be run from the repository root so that relative file paths resolve correctly.
 
 iNaturalist observations reflect reported sightings and may be affected by differences in observation effort, access, and coordinate privacy. Changes in observation counts should not be interpreted as direct evidence of changes in deer population size.
+
+### AI Use Documentation
+
+ChatGPT was used as a supplementary tool throughout the development of this project to assist with understanding project requirements, R coding, spatial data concepts, and troubleshooting.
+
+AI assistance was used in the following areas:
+
+- **Task and assignment clarification:** Clarifying project instructions, assignment requirements, analytical objectives, and expectations for different stages of the project.
+
+- **Spatial data and GIS concepts:** Understanding spatial data structures, coordinate reference systems, spatial transformations, geographic data processing, and spatial analysis workflows.
+
+- **R coding and spatial analysis:** Clarifying the use of functions such as `st_as_sf()`, `st_transform()`, and `st_join()` for converting deer observations into spatial features, transforming coordinate systems, and assigning deer observations to counties.
+
+- **Code troubleshooting:** Identifying possible causes and solutions for errors involving missing packages, incorrect file paths, and missing objects during R Markdown knitting.
+
+- **Code understanding:** Explaining R functions and analytical methods that had not been covered in previous coursework or were not fully understood.
+
+The project code was primarily written and executed by the project team in RStudio. Outputs were reviewed, and adjustments were made based on the results. Figures and interpretations were developed using the project data.
