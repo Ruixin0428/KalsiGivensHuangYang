@@ -1,8 +1,10 @@
 ---
 title: "03_Deer_Exploratory_Analysis.Rmd"
-author: "Ruixin Yang and Sara Huang"
+author: "Ruixin Yang and Sara Huang, Gina Givens and Jasleen Kalsi"
 date: "2026-10-29"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -326,5 +328,53 @@ We marked the deer observations from 2010-2015 as pre-development and the data f
 For housing units, development, period, and their interaction are all significant on deer observation. The Tukey test shows that before the development, the deer observation does not have a significant difference in distribution across the counties. This is the only insignificant case. By contrast, after the development, the deer observation shows a significant difference in distribution across the counties with high and low development.
 For vegetation cover, forest clearing, period, and their interaction are all significant on deer observation. The Tukey test shows that vegetation cover before development does not have a significant difference on deer observation distribution. However, counties with decreased vegetation cover has a significant difference on deer observation distribution before and after the development. Moreover, after the development, the level of vegetation destruction is significant on deer observation distribution.
 
+# Research Question and Current Analysis Framework
 
+## Central Research Question
+
+Are white-tailed deer observations more common near developed areas that border wildland vegetation in North Carolina?
+
+## Variables and Observations
+
+The project combines publicly available iNaturalist observations of white-tailed deer with county level in NC and data derived from the SILVIS Wildland–Urban Interface (WUI) dataset.
+
+| Variable | Description | Unit |
+|---|---|---|
+| Deer observations | Publicly available iNaturalist records of white-tailed deer | Observation records |
+| Observation year | Year in which the deer observation was recorded | Year |
+| Latitude and longitude | Geographic coordinates associated with each observation | Decimal degrees |
+| County | North Carolina county assigned through a spatial join | County |
+| `HU_dif` | Difference between 2020 and 2010 housing unit totals | Housing units |
+| `VEG_dif` | Difference between 2019 and 2011 vegetation percentage values | Derived difference in source values |
+| `development` | Categorical variable indicating whether `HU_dif` is greater than zero | Yes/No |
+| `forest` | Categorical variable based on whether `VEG_dif` is negative or nonnegative | dec/inc |
+
+The observational unit for the deer dataset is an individual iNaturalist observation record. The WUI data were originally available at the census-block level and were aggregated to the county level for the current analysis.
+
+## Intended Comparisons
+
+The current exploratory analysis examines several patterns in the available data:
+
+- **Temporal patterns:** Changes in the number of deer observations recorded annually from 2010 through 2020.
+- **Geographic patterns:** Differences in the distribution and number of deer observations across North Carolina counties.
+- **Development patterns:** Spatial comparisons between deer observations and county level changes in housing units.
+- **Vegetation patterns:** Spatial comparisons between deer observations and county level changes in vegetation values.
+- **Period comparisons:** Exploratory comparisons of observation counts across development and vegetation categories.
+
+The current maps compare deer observations from 2010–2015 with observations from 2016–2020. The statistical analyses also examine development and vegetation categories using the period variable defined in the current R script.
+
+## Data Limitations and Unresolved Issues
+
+Several limitations have been identified during the current data quality assessments and exploratory analysis:
+
+- **Observation effort:** iNaturalist records represent reported observations rather than actual deer abundance. Differences in observer participation, reporting effort, and platform use over time may influence the number and distribution of records.
+- **Repeated observations:** Individual records do not necessarily represent unique deer. Multiple observations may involve the same animal.
+- **Coordinate uncertainty:** Some iNaturalist records have obscured coordinates, which may limit the precision of spatial comparisons.
+- **Missing observation dates:** Records without observation dates were excluded when filtering the dataset to the 2010–2020 study period.
+- **Unmatched county observations:** 33 deer observations could not be assigned to a county during the spatial join and were excluded from the countylevel mapping and summaries.
+- **County-level aggregation:** The WUI variables are aggregated to the county level, which may obscure smaller scale relationships between deer observations, development, and vegetation.
+- **Temporal differences:** The deer observations span 2010–2020, while the vegetation comparison uses 2011 and 2019 source values. The different time periods should be considered when interpreting spatial patterns.
+- **Proximity analysis:** The relationship between deer observations and the distance to developed areas bordering wildland vegetation has not yet been directly evaluated. The current analysis is exploratory and uses countylevel comparisons.
+
+At this stage, the analysis provides an initial examination of temporal and geographic patterns in deer observations in relation to development and vegetation changes. Additional work is needed to evaluate proximity more directly and determine how the identified data limitations may affect interpretation of the results.
 
