@@ -1,6 +1,6 @@
 ---
 title: "03_Deer_Exploratory_Analysis.Rmd"
-author: "Ruixin Yang and Sara Huang"
+author: "Ruixin Yang Sara Huang, Gina Givens, Jasleen Kalsi"
 date: "2026-10-29"
 output:
   pdf_document: default
