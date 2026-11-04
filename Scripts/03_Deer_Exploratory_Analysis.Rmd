@@ -1,6 +1,6 @@
 ---
 title: "03_Deer_Exploratory_Analysis.Rmd"
-author: "Ruixin Yang and Sara Huang, Gina Givens and Jasleen Kalsi"
+author: "Ruixin Yang and Sara Huang"
 date: "2026-10-29"
 output:
   pdf_document: default
@@ -377,4 +377,12 @@ Several limitations have been identified during the current data quality assessm
 - **Proximity analysis:** The relationship between deer observations and the distance to developed areas bordering wildland vegetation has not yet been directly evaluated. The current analysis is exploratory and uses countylevel comparisons.
 
 At this stage, the analysis provides an initial examination of temporal and geographic patterns in deer observations in relation to development and vegetation changes. Additional work is needed to evaluate proximity more directly and determine how the identified data limitations may affect interpretation of the results.
+## AI Use Statement
 
+ChatGPT was used as a supplementary tool during the development of this analysis. AI assistance was used in the following areas:
+
+- **Spatial data processing:** Helped clarify the use of `st_as_sf()`, `st_transform()`, and `st_join()` for converting deer observations into spatial features, transforming coordinate systems, and assigning observations to counties.
+- **Code troubleshooting:** Helped identify possible causes and solutions for errors involving missing packages, incorrect file paths, and missing objects during R Markdown knitting.
+- **Code understanding:** Provided explanations of R functions and spatial analysis operations.
+
+The project code was primarily written and executed by the student in RStudio. Outputs were reviewed, and adjustments were made based on the results. All figures and interpretations were developed using the project data.
