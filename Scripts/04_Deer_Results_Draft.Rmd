@@ -23,6 +23,12 @@ dim(df_deer_clean)
 head(df_deer_clean)
 ```
 
+## Introduction: Deer Observation Data and Methods
+
+This section presents exploratory patterns in white-tailed deer observations across North Carolina from 2010 to 2020. The dataset contains 2,891 iNaturalist observation records, including observation dates, geographic coordinates, and quality indicators.
+
+We calculated the annual observation data to analyze the temporal trends. Additionally, to study the spatial distribution, we used spatial connection technology to match the observation coordinates with the boundary polygons of each county in North Carolina, and summarized and visualized the county-level data. The analysis focuses on recorded observations rather than the actual abundance of deer.
+
 ## Figures and Maps
 ```{r counting observations by year}
 # Count deer observations by year
@@ -77,7 +83,7 @@ Observed pattern: The annual number of observations increased (12 records in 201
 Units: Number of iNaturalist observation records per year.
 Limitation: The observed numbers do not equate to the actual number of deer populations. This trend may merely indicate an increase in people's participation on the iNaturalist platform, rather than an actual growth in the deer population.
 
-```{r assign the deer observations to the counties}
+```{r assign_counties, include=FALSE}
 # Load North Carolina county boundaries
 nc_map <- st_read("data/processed/NC_map_joined.shp")
 
@@ -162,7 +168,12 @@ knitr::kable(
   row.names = FALSE,
   caption = "Deer Observations by County (2010–2020)"
 )
+```
 
+### Interpretation: 
+This table summarizes the cumulative number of white-tailed deer observations across all 100 North Carolina counties from 2010 to 2020. It provides a comprehensive view of the geographic distribution of recorded observations, including counties with no observations. 
+
+```{r top 10}
 # Top 10 counties by deer observations
 
 county_top10 <- county_counts[
@@ -199,7 +210,13 @@ barplot(
 
 ```
 
-### Three main findings
+### Figure 3. Top 10 North Carolina Counties by Deer Observations (2010–2020)
+Question: Which North Carolina counties recorded the highest numbers of white-tailed deer observations?
+Observed pattern: Wake County had substantially more recorded observations than the other counties, followed by Orange and Durham. The bar chart highlights the uneven distribution of observations among the ten highest-count counties.
+Units: Cumulative number of iNaturalist observation records per county from 2010 to 2020.
+Limitation: These are just observation counts and have not been standardized by county area or observer effort. Therefore, counties with higher counts do not necessarily have larger deer populations.
+
+### Three main findings for deer data
 Temporal increase: Deer observation records increased substantially from 2010 to 2020, especially after 2016.
 Uneven spatial distribution: Observations were not evenly distributed across North Carolina counties.
 Concentration in a few counties: Wake (547), Orange (265), and Durham (188) together accounted for approximately 35% of county-assigned observations.
