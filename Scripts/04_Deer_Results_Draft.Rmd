@@ -1,0 +1,388 @@
+---
+title: "03_Deer_Exploratory_Analysis.Rmd"
+author: "Ruixin Yang Sara Huang, Gina Givens, Jasleen Kalsi"
+date: "2026-10-29"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# Load the cleaned deer dataset
+library(readr)
+library(sf)
+library(tidyverse)
+library(ggplot2)
+
+df_deer_clean <- read_csv("data/processed/NC_Deer_Cleaned_2010_2020.csv")
+NC_map <- st_read("data/processed/NC_map_joined.shp")
+
+# Check the dataset
+dim(df_deer_clean)
+head(df_deer_clean)
+```
+
+## Figures and Maps
+```{r counting observations by year}
+# Count deer observations by year
+annual_counts <- as.data.frame(
+  table(df_deer_clean$year)
+)
+
+# Rename columns
+names(annual_counts) <- c("Year", "Observations")
+
+# Convert year and count to numeric
+annual_counts$Year <- as.integer(
+  as.character(annual_counts$Year)
+)
+
+annual_counts$Observations <- as.integer(
+  annual_counts$Observations
+)
+
+# View the summary table
+annual_counts
+
+```
+
+```{r figure 1}
+
+# Figure 1: Annual white-tailed deer observations in NC
+
+plot(
+  annual_counts$Year,
+  annual_counts$Observations,
+  type = "o",
+  pch = 16,
+  col = "steelblue",
+  lwd = 2,
+  xlab = "Year",
+  ylab = "Number of observations",
+  main = "Annual White-tailed Deer Observations in North Carolina",
+  xaxt = "n"
+)
+
+axis(
+  1,
+  at = 2010:2020,
+  labels = 2010:2020
+)
+```
+
+### Figure 1. Annual White-tailed Deer Observations in North Carolina (2010–2020)
+Question: How did the number of recorded white-tailed deer observations change from 2010 to 2020?
+Observed pattern: The annual number of observations increased (12 records in 2010 to 1,048 in 2020).
+Units: Number of iNaturalist observation records per year.
+Limitation: The observed numbers do not equate to the actual number of deer populations. This trend may merely indicate an increase in people's participation on the iNaturalist platform, rather than an actual growth in the deer population.
+
+```{r assign the deer observations to the counties}
+# Load North Carolina county boundaries
+nc_map <- st_read("data/processed/NC_map_joined.shp")
+
+# Convert deer coordinates into spatial points
+deer_sf <- st_as_sf(
+  df_deer_clean,
+  coords = c("longitude", "latitude"),
+  crs = 4326,
+  remove = FALSE
+)
+
+# Match the coordinate system of the county map
+deer_sf <- st_transform(deer_sf, st_crs(NC_map))
+
+# Assign each deer observation to a county
+deer_county <- st_join(
+  deer_sf,
+  NC_map[, c("NAME", "GEOID")],
+  join = st_within,
+  left = TRUE
+)
+
+# Preview the results
+head(st_drop_geometry(deer_county)[, c("id", "NAME", "GEOID")])
+```
+
+```{r figure 2}
+# Count deer observations by county
+county_counts <- as.data.frame(
+  table(deer_county$NAME)
+)
+
+# Rename columns
+names(county_counts) <- c("NAME", "deer_count")
+
+# Convert counts to numeric
+county_counts$deer_count <- as.integer(county_counts$deer_count)
+
+# Preview
+head(county_counts)
+
+# Join deer counts to county boundaries
+NC_map$deer_count <- county_counts$deer_count[
+  match(NC_map$NAME, county_counts$NAME)
+]
+
+# Counties with no observations should have a count of zero
+NC_map$deer_count[is.na(NC_map$deer_count)] <- 0
+
+# Figure 2: Deer observations by county
+plot(
+  NC_map["deer_count"],
+  main = "White-tailed Deer Observations by County in NC",
+  pal = colorRampPalette(c("lightblue", "darkblue")),
+  key.pos = 4,
+  axes = FALSE,
+  reset = FALSE
+)
+```
+
+### Figure 2. Spatial Distribution of White-tailed Deer Observations by County in North Carolina (2010–2020)
+Question: How are white-tailed deer observations distributed across North Carolina counties?
+Observed pattern: Deer observations were unevenly distributed across counties.
+Units: Number of iNaturalist deer observation records per county.
+Limitation: Observation counts were not adjusted for county area or differences in observer. Additionally, 33 observations could not be assigned to a county and were excluded from this map. Therefore, higher observation counts do not necessarily indicate higher deer population density.
+
+```{r summary table}
+
+# Summary table for all 100 counties
+all_counties <- data.frame(
+  County = NC_map$NAME,
+  Observations = NC_map$deer_count
+)
+
+# Sort from highest to lowest
+all_counties <- all_counties[
+  order(-all_counties$Observations),
+]
+
+knitr::kable(
+  all_counties,
+  row.names = FALSE,
+  caption = "Deer Observations by County (2010–2020)"
+)
+
+# Top 10 counties by deer observations
+
+county_top10 <- county_counts[
+  order(county_counts$deer_count, decreasing = TRUE),
+][1:10, ]
+
+# Add ranking
+county_top10 <- data.frame(
+  Rank = 1:10,
+  County = county_top10$NAME,
+  Observations = county_top10$deer_count
+)
+
+# Display as a formatted table
+knitr::kable(
+  county_top10,
+  caption = "Top 10 NC Counties by White-tailed Deer Observations (2010–2020)",
+  row.names = FALSE
+)
+
+# Horizontal bar chart for top 10 counties
+par(mar = c(5, 12, 4, 2))
+
+barplot(
+  rev(county_top10$Observations),
+  names.arg = rev(county_top10$County),
+  horiz = TRUE,
+  las = 1,
+  col = "steelblue",
+  cex.names = 0.8,
+  xlab = "Number of observations",
+  main = "Top 10 Counties by Deer Observations"
+)
+
+```
+
+### Three main findings
+Temporal increase: Deer observation records increased substantially from 2010 to 2020, especially after 2016.
+Uneven spatial distribution: Observations were not evenly distributed across North Carolina counties.
+Concentration in a few counties: Wake (547), Orange (265), and Durham (188) together accounted for approximately 35% of county-assigned observations.
+
+```{r data Wrangling}
+df_deer_spatial <- df_deer_clean %>%
+  select(observed_on, year, longitude, latitude) %>%
+  mutate(year = as.character(year)) %>%
+  st_as_sf(coords = c('longitude','latitude'), crs=4269)
+df_deer_in_NC <- st_join(df_deer_spatial, NC_map, join = st_within) %>%
+  drop_na() %>%
+  mutate(development = ifelse(HU_dif > 0, "yes", "no"),
+         forest = ifelse(VEG_dif < 0, "dec", "inc")) %>%
+  group_by(NAME, year, development, forest) %>%
+  summarise(observation=n()) %>%
+  ungroup(year, development, forest) %>%
+  mutate(period = ifelse(year == "2016" | year == "2017" | year == "2018" | year == "2019", NA, 
+                         ifelse(year == "2020", "after", "before")))
+```
+
+```{r map 1}
+map_deer_in_NC = ggplot() + 
+  geom_sf(data = NC_map, color = "black", linewidth = 0.5, aes(fill = HU_dif)) + 
+  geom_sf(data = df_deer_spatial%>%filter(year == "2010" | year == "2011" | year == "2012" | year == "2013" | year == "2014" | year == "2015"), color = "cyan", size = 0.5, alpha = 0.5, stroke = 0.5) +
+  scale_fill_gradient(low="darkblue", high="red") +
+  labs(title = "Housing Unit Differnce by Counties with White-tailed Deer Observations before Development",
+       fill = "Difference",
+       caption = "Housing unit difference is calculated with data from 2020 subtracting data from 2010. Deer observation is the sum from 2010\nto 2015. The blue means unchanged or small increase of housing units in the counties, and the red means large increase.") +
+  theme_bw() +
+  theme(plot.title = element_text(size = 11.5),
+        plot.caption = element_text(hjust = 0))
+map_deer_in_NC
+```
+
+```{r mapn 2}
+map_deer_in_NC = ggplot() + 
+  geom_sf(data = NC_map, color = "black", linewidth = 0.5, aes(fill = HU_dif)) + 
+  geom_sf(data = df_deer_spatial%>%filter(year == "2016" | year == "2017" | year == "2018" | year == "2019" | year == "2020"), color = "cyan", size = 0.5, alpha = 0.3, stroke = 0.5) +
+  scale_fill_gradient(low="darkblue",high="red") +
+  labs(title = "Housing Unit Differnce by Counties with White-tailed Deer Observations after Development",
+       fill = "Difference",
+       caption = "Housing unit difference is calculated with data from 2020 subtracting data from 2010. Deer observation is from 2020. The\nblue means unchanged or small increase of housing units in the counties, and the red means large increase.") +
+  theme_bw() +
+  theme(plot.title = element_text(size = 12),
+        plot.caption = element_text(hjust = 0))
+map_deer_in_NC
+```
+
+```{r map 3}
+map_deer_in_NC = ggplot() + 
+  geom_sf(data = NC_map, color = "black", linewidth = 0.5, aes(fill = VEG_dif)) + 
+  geom_sf(data = df_deer_spatial%>%filter(year == "2010" | year == "2011" | year == "2012" | year == "2013" | year == "2014" | year == "2015"), color = "cyan", size = 0.5, alpha = 0.5, stroke = 0.5) +
+  scale_fill_gradient(low="yellow",high="#062D03") +
+  labs(title = "Vegetation Coverage Differnce by Counties with White-tailed Deer Observations before Development",
+       fill = "Difference",
+       caption = "Vegetation cover difference is calculated with data from 2020 subtracting data from 2010. Deer observation is the sum from\n2010 to 2015. The green means less destruction on vegatation, and the yellow means more destruction.") +
+  theme_bw() +
+  theme(plot.title = element_text(size = 10.5),
+        plot.caption = element_text(hjust = 0))
+map_deer_in_NC
+```
+
+```{r map 4}
+map_deer_in_NC = ggplot() + 
+  geom_sf(data = NC_map, color = "black", linewidth = 0.5, aes(fill = VEG_dif)) + 
+  geom_sf(data = df_deer_spatial%>%filter(year == "2016" | year == "2017" | year == "2018" | year == "2019" | year == "2020"), color = "cyan", size = 0.5, alpha = 0.3, stroke = 0.5) +
+  scale_fill_gradient(low="yellow",high="#062D03") +
+  labs(title = "Vegetation Coverage Differnce by Counties with White-tailed Deer Observations after Development",
+       fill = "Difference",
+       caption = "Vegetation coverage difference is calculated with data from 2020 subtracting data from 2010. Deer observation is from 2020.\nThe green means less destruction on vegatation, and the yellow means more destruction.") +
+  theme_bw() +
+  theme(plot.title = element_text(size = 10.5),
+        plot.caption = element_text(hjust = 0))
+map_deer_in_NC
+```
+
+### Map 1-4
+Question: How are white-tailed deer observations distributed across North Carolina counties with different development rate?
+Observed pattern: In terms of housing units, the deer observations before the development (2010-2015) spread out more than the once from 2020, which gather in 4 clusters in the counties with more housing units. For vegetation cover changes, the pattern is less obvious: deer observations cluster in both regions with high and low destruction.
+Units: Number of iNaturalist deer observation records per county.
+Limitation: There were fewer data for 2010 to 2015, so we decided to add all these years up and treat the sum as the pre-development deer distribution. Also, the increase in deer observation may not correlated to development itself, but the increase of people visiting the area and thus seeing more deer.
+
+## ANOVA
+```{r ANOVA Development}
+model_dev <- aov(log(observation) ~ period + development + period*development, data = df_deer_in_NC)
+TukeyHSD(model_dev)
+```
+
+```{r ANOVA Development Validity}
+fit_dev <- model_dev$fitted
+res_dev <- model_dev$res
+
+par(mfrow=c(2,2))
+boxplot(observation ~ development+period, data = df_deer_in_NC)
+qqnorm(res_dev, datax = TRUE)
+qqline(res_dev, col = "red", lwd = 2)
+plot(x = seq(1:length(res_dev)), y = res_dev, xlab="Order", ylab="Residuals")
+lines(x = seq(1:length(res_dev)), y = res_dev)
+abline(0,0)
+plot(fit_dev, res_dev, xlab="Fitted Values", ylab="Residuals")
+```
+
+```{r ANOVA Forest}
+model_forest <- aov(log(observation) ~ period + forest + period*forest, data = df_deer_in_NC)
+summary(model_forest)
+TukeyHSD(model_forest)
+```
+
+```{r ANOVA Forest Validity}
+fit_forest <- model_forest$fitted
+res_forest <- model_forest$res
+
+par(mfrow=c(2,2))
+boxplot(observation ~ forest+period, data = df_deer_in_NC)
+qqnorm(res_forest, datax = TRUE)
+qqline(res_forest, col = "red", lwd = 2)
+plot(x = seq(1:length(res_forest)), y = res_forest, xlab="Order", ylab="Residuals")
+lines(x = seq(1:length(res_forest)), y = res_forest)
+abline(0,0)
+plot(fit_forest, res_forest, xlab="Fitted Values", ylab="Residuals")
+```
+
+### ANOVA analysis
+Question: Are white-tailed deer observations distributed across North Carolina counties significantly different between counties with different development rate?
+We marked the deer observations from 2010-2015 as pre-development and the data from 2020 as post-development. To fit the ANOVA assumptions better, according to the validity plots, the data is natural log transformed. 
+For housing units, development, period, and their interaction are all significant on deer observation. The Tukey test shows that before the development, the deer observation does not have a significant difference in distribution across the counties. This is the only insignificant case. By contrast, after the development, the deer observation shows a significant difference in distribution across the counties with high and low development.
+For vegetation cover, forest clearing, period, and their interaction are all significant on deer observation. The Tukey test shows that vegetation cover before development does not have a significant difference on deer observation distribution. However, counties with decreased vegetation cover has a significant difference on deer observation distribution before and after the development. Moreover, after the development, the level of vegetation destruction is significant on deer observation distribution.
+
+# Research Question and Current Analysis Framework
+
+## Central Research Question
+
+Are white-tailed deer observations more common near developed areas that border wildland vegetation in North Carolina?
+
+## Variables and Observations
+
+The project combines publicly available iNaturalist observations of white-tailed deer with county level in NC and data derived from the SILVIS Wildland–Urban Interface (WUI) dataset.
+
+| Variable | Description | Unit |
+|---|---|---|
+| Deer observations | Publicly available iNaturalist records of white-tailed deer | Observation records |
+| Observation year | Year in which the deer observation was recorded | Year |
+| Latitude and longitude | Geographic coordinates associated with each observation | Decimal degrees |
+| County | North Carolina county assigned through a spatial join | County |
+| `HU_dif` | Difference between 2020 and 2010 housing unit totals | Housing units |
+| `VEG_dif` | Difference between 2019 and 2011 vegetation percentage values | Derived difference in source values |
+| `development` | Categorical variable indicating whether `HU_dif` is greater than zero | Yes/No |
+| `forest` | Categorical variable based on whether `VEG_dif` is negative or nonnegative | dec/inc |
+
+The observational unit for the deer dataset is an individual iNaturalist observation record. The WUI data were originally available at the census-block level and were aggregated to the county level for the current analysis.
+
+## Intended Comparisons
+
+The current exploratory analysis examines several patterns in the available data:
+
+- **Temporal patterns:** Changes in the number of deer observations recorded annually from 2010 through 2020.
+- **Geographic patterns:** Differences in the distribution and number of deer observations across North Carolina counties.
+- **Development patterns:** Spatial comparisons between deer observations and county level changes in housing units.
+- **Vegetation patterns:** Spatial comparisons between deer observations and county level changes in vegetation values.
+- **Period comparisons:** Exploratory comparisons of observation counts across development and vegetation categories.
+
+The current maps compare deer observations from 2010–2015 with observations from 2016–2020. The statistical analyses also examine development and vegetation categories using the period variable defined in the current R script.
+
+## Data Limitations and Unresolved Issues
+
+Several limitations have been identified during the current data quality assessments and exploratory analysis:
+
+- **Observation effort:** iNaturalist records represent reported observations rather than actual deer abundance. Differences in observer participation, reporting effort, and platform use over time may influence the number and distribution of records.
+- **Repeated observations:** Individual records do not necessarily represent unique deer. Multiple observations may involve the same animal.
+- **Coordinate uncertainty:** Some iNaturalist records have obscured coordinates, which may limit the precision of spatial comparisons.
+- **Missing observation dates:** Records without observation dates were excluded when filtering the dataset to the 2010–2020 study period.
+- **Unmatched county observations:** 33 deer observations could not be assigned to a county during the spatial join and were excluded from the countylevel mapping and summaries.
+- **County-level aggregation:** The WUI variables are aggregated to the county level, which may obscure smaller scale relationships between deer observations, development, and vegetation.
+- **Temporal differences:** The deer observations span 2010–2020, while the vegetation comparison uses 2011 and 2019 source values. The different time periods should be considered when interpreting spatial patterns.
+- **Proximity analysis:** The relationship between deer observations and the distance to developed areas bordering wildland vegetation has not yet been directly evaluated. The current analysis is exploratory and uses countylevel comparisons.
+
+At this stage, the analysis provides an initial examination of temporal and geographic patterns in deer observations in relation to development and vegetation changes. Additional work is needed to evaluate proximity more directly and determine how the identified data limitations may affect interpretation of the results.
+## AI Use Statement
+
+ChatGPT was used as a supplementary tool during the development of this analysis. AI assistance was used in the following areas:
+
+- **Spatial data processing:** Helped clarify the use of `st_as_sf()`, `st_transform()`, and `st_join()` for converting deer observations into spatial features, transforming coordinate systems, and assigning observations to counties.
+- **Code troubleshooting:** Helped identify possible causes and solutions for errors involving missing packages, incorrect file paths, and missing objects during R Markdown knitting.
+- **Code understanding:** Provided explanations of R functions and spatial analysis operations.
+
+The project code was primarily written and executed by the student in RStudio. Outputs were reviewed, and adjustments were made based on the results. All figures and interpretations were developed using the project data.
