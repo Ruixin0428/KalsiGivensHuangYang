@@ -226,15 +226,6 @@ df_deer_spatial <- df_deer_clean %>%
   select(observed_on, year, longitude, latitude) %>%
   mutate(year = as.character(year)) %>%
   st_as_sf(coords = c('longitude','latitude'), crs=4269)
-df_deer_in_NC <- st_join(df_deer_spatial, NC_map, join = st_within) %>%
-  drop_na() %>%
-  mutate(development = ifelse(HU_dif > 0, "yes", "no"),
-         forest = ifelse(VEG_dif < 0, "dec", "inc")) %>%
-  group_by(NAME, year, development, forest) %>%
-  summarise(observation=n()) %>%
-  ungroup(year, development, forest) %>%
-  mutate(period = ifelse(year == "2016" | year == "2017" | year == "2018" | year == "2019", NA, 
-                         ifelse(year == "2020", "after", "before")))
 ```
 
 ```{r map 1}
@@ -254,7 +245,7 @@ map_deer_in_NC
 ```{r mapn 2}
 map_deer_in_NC = ggplot() + 
   geom_sf(data = NC_map, color = "black", linewidth = 0.5, aes(fill = HU_dif)) + 
-  geom_sf(data = df_deer_spatial%>%filter(year == "2016" | year == "2017" | year == "2018" | year == "2019" | year == "2020"), color = "cyan", size = 0.5, alpha = 0.3, stroke = 0.5) +
+  geom_sf(data = df_deer_spatial%>%filter(year == "2020"), color = "cyan", size = 0.5, alpha = 0.5, stroke = 0.5) +
   scale_fill_gradient(low="darkblue",high="red") +
   labs(title = "Housing Unit Differnce by Counties with White-tailed Deer Observations after Development",
        fill = "Difference",
@@ -282,7 +273,7 @@ map_deer_in_NC
 ```{r map 4}
 map_deer_in_NC = ggplot() + 
   geom_sf(data = NC_map, color = "black", linewidth = 0.5, aes(fill = VEG_dif)) + 
-  geom_sf(data = df_deer_spatial%>%filter(year == "2016" | year == "2017" | year == "2018" | year == "2019" | year == "2020"), color = "cyan", size = 0.5, alpha = 0.3, stroke = 0.5) +
+  geom_sf(data = df_deer_spatial%>%filter(year == "2020"), color = "cyan", size = 0.5, alpha = 0.5, stroke = 0.5) +
   scale_fill_gradient(low="yellow",high="#062D03") +
   labs(title = "Vegetation Coverage Differnce by Counties with White-tailed Deer Observations after Development",
        fill = "Difference",
@@ -300,9 +291,26 @@ Units: Number of iNaturalist deer observation records per county.
 Limitation: There were fewer data for 2010 to 2015, so we decided to add all these years up and treat the sum as the pre-development deer distribution. Also, the increase in deer observation may not correlated to development itself, but the increase of people visiting the area and thus seeing more deer.
 
 ## ANOVA
+```{r data wrangling}
+df_deer_in_NC <- st_join(df_deer_spatial, NC_map, join = st_within) %>%
+  drop_na() %>%
+  filter(year != "2016" & year != "2017" & year != "2018" & year != "2019") %>%
+  mutate(development = ifelse(HU_dif > 0, "yes", "no"),
+         forest = ifelse(VEG_dif < 0, "dec", "inc"),
+         year = ifelse(year == "2020", "2020", "20102015")) %>%
+  group_by(NAME, year, development, forest) %>%
+  summarise(observation=n()) %>%
+  ungroup(year, development, forest) %>%
+  mutate(observation = ifelse(year == "2020", observation, sum(observation))) %>%
+  mutate(period = ifelse(year == "2020", "after", "before"))
+```
+
 ```{r ANOVA Development}
 model_dev <- aov(log(observation) ~ period + development + period*development, data = df_deer_in_NC)
+summary(model_dev)
 TukeyHSD(model_dev)
+cld_dev <- multcompLetters4(model_dev, TukeyHSD(model_dev))
+print(cld_dev)
 ```
 
 ```{r ANOVA Development Validity}
@@ -323,6 +331,8 @@ plot(fit_dev, res_dev, xlab="Fitted Values", ylab="Residuals")
 model_forest <- aov(log(observation) ~ period + forest + period*forest, data = df_deer_in_NC)
 summary(model_forest)
 TukeyHSD(model_forest)
+cld_forest <- multcompLetters4(model_forest, TukeyHSD(model_forest))
+print(cld_forest)
 ```
 
 ```{r ANOVA Forest Validity}
@@ -341,9 +351,12 @@ plot(fit_forest, res_forest, xlab="Fitted Values", ylab="Residuals")
 
 ### ANOVA analysis
 Question: Are white-tailed deer observations distributed across North Carolina counties significantly different between counties with different development rate?
-We marked the deer observations from 2010-2015 as pre-development and the data from 2020 as post-development. To fit the ANOVA assumptions better, according to the validity plots, the data is natural log transformed. 
-For housing units, development, period, and their interaction are all significant on deer observation. The Tukey test shows that before the development, the deer observation does not have a significant difference in distribution across the counties. This is the only insignificant case. By contrast, after the development, the deer observation shows a significant difference in distribution across the counties with high and low development.
-For vegetation cover, forest clearing, period, and their interaction are all significant on deer observation. The Tukey test shows that vegetation cover before development does not have a significant difference on deer observation distribution. However, counties with decreased vegetation cover has a significant difference on deer observation distribution before and after the development. Moreover, after the development, the level of vegetation destruction is significant on deer observation distribution.
+We marked the deer observations from 2010-2015 as pre-development and the data from 2020 as post-development. We also marked the different levels of development and vegetation coverage based on the subtraction columns.
+development: no value <= 0; yes value > 0
+vegetation coverage: inc value > 0; dec value < 0
+To fit the ANOVA assumptions better, according to the validity plots, the data is natural log transformed, and the assumptions are fulfilled, showing in the diagnosis plots.  
+For housing units, development and period are both significant on deer observation. The Tukey test shows that the counties that have significant difference of deer observations before and after development are those with development.
+For vegetation cover, forest clearing and period are both significant on deer observation. The Tukey test shows that the counties that have significant difference of deer observations before and after development are those with vegetation coverage decline.
 
 # Research Question and Current Analysis Framework
 
