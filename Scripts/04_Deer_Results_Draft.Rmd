@@ -14,6 +14,7 @@ library(readr)
 library(sf)
 library(tidyverse)
 library(ggplot2)
+library(patchwork)
 
 df_deer_clean <- read_csv("data/processed/NC_Deer_Cleaned_2010_2020.csv")
 NC_map <- st_read("data/processed/NC_map_joined.shp")
@@ -229,7 +230,31 @@ df_deer_spatial <- df_deer_clean %>%
 ```
 
 ```{r map 1}
-map_deer_in_NC = ggplot() + 
+map1_deer_in_NC = ggplot() + 
+  geom_sf(data = NC_map, color = "black", linewidth = 0.5, aes(fill = HU_dif)) + 
+  scale_fill_gradient(low="darkblue", high="red") +
+  labs(title = "Housing Unit Differnce by Counties",
+       fill = "Difference",
+       caption = "Housing unit difference is calculated with data from 2020 subtracting data from 2010.") +
+  theme_bw() +
+  theme(plot.title = element_text(size = 11.5),
+        plot.caption = element_text(hjust = 0))
+```
+
+```{r map 2}
+map2_deer_in_NC = ggplot() + 
+  geom_sf(data = NC_map, color = "black", linewidth = 0.5, aes(fill = VEG_dif)) + 
+  scale_fill_gradient(low="yellow",high="#062D03") +
+  labs(title = "Vegetation Coverage Differnce by Counties",
+       fill = "Difference",
+       caption = "Vegetation coverage difference is calculated with data from 2019 subtracting data from 2011.") +
+  theme_bw() +
+  theme(plot.title = element_text(size = 10.5),
+        plot.caption = element_text(hjust = 0))
+```
+
+```{r map 3}
+map3_deer_in_NC = ggplot() + 
   geom_sf(data = NC_map, color = "black", linewidth = 0.5, aes(fill = HU_dif)) + 
   geom_sf(data = df_deer_spatial%>%filter(year == "2010" | year == "2011" | year == "2012" | year == "2013" | year == "2014" | year == "2015"), color = "cyan", size = 0.5, alpha = 0.5, stroke = 0.5) +
   scale_fill_gradient(low="darkblue", high="red") +
@@ -239,11 +264,10 @@ map_deer_in_NC = ggplot() +
   theme_bw() +
   theme(plot.title = element_text(size = 11.5),
         plot.caption = element_text(hjust = 0))
-map_deer_in_NC
 ```
 
-```{r mapn 2}
-map_deer_in_NC = ggplot() + 
+```{r mapn 4}
+map4_deer_in_NC = ggplot() + 
   geom_sf(data = NC_map, color = "black", linewidth = 0.5, aes(fill = HU_dif)) + 
   geom_sf(data = df_deer_spatial%>%filter(year == "2020"), color = "cyan", size = 0.5, alpha = 0.5, stroke = 0.5) +
   scale_fill_gradient(low="darkblue",high="red") +
@@ -253,35 +277,42 @@ map_deer_in_NC = ggplot() +
   theme_bw() +
   theme(plot.title = element_text(size = 12),
         plot.caption = element_text(hjust = 0))
-map_deer_in_NC
 ```
 
-```{r map 3}
-map_deer_in_NC = ggplot() + 
+```{r map 5}
+map5_deer_in_NC = ggplot() + 
   geom_sf(data = NC_map, color = "black", linewidth = 0.5, aes(fill = VEG_dif)) + 
   geom_sf(data = df_deer_spatial%>%filter(year == "2010" | year == "2011" | year == "2012" | year == "2013" | year == "2014" | year == "2015"), color = "cyan", size = 0.5, alpha = 0.5, stroke = 0.5) +
   scale_fill_gradient(low="yellow",high="#062D03") +
   labs(title = "Vegetation Coverage Differnce by Counties with White-tailed Deer Observations before Development",
        fill = "Difference",
-       caption = "Vegetation cover difference is calculated with data from 2020 subtracting data from 2010. Deer observation is the sum from\n2010 to 2015. The green means less destruction on vegatation, and the yellow means more destruction.") +
+       caption = "Vegetation cover difference is calculated with data from 2019 subtracting data from 2011. Deer observation is the sum from\n2010 to 2015. The green means less destruction on vegatation, and the yellow means more destruction.") +
   theme_bw() +
   theme(plot.title = element_text(size = 10.5),
         plot.caption = element_text(hjust = 0))
-map_deer_in_NC
 ```
 
-```{r map 4}
-map_deer_in_NC = ggplot() + 
+```{r map 6}
+map6_deer_in_NC = ggplot() + 
   geom_sf(data = NC_map, color = "black", linewidth = 0.5, aes(fill = VEG_dif)) + 
   geom_sf(data = df_deer_spatial%>%filter(year == "2020"), color = "cyan", size = 0.5, alpha = 0.5, stroke = 0.5) +
   scale_fill_gradient(low="yellow",high="#062D03") +
   labs(title = "Vegetation Coverage Differnce by Counties with White-tailed Deer Observations after Development",
        fill = "Difference",
-       caption = "Vegetation coverage difference is calculated with data from 2020 subtracting data from 2010. Deer observation is from 2020.\nThe green means less destruction on vegatation, and the yellow means more destruction.") +
+       caption = "Vegetation coverage difference is calculated with data from 2019 subtracting data from 2011. Deer observation is from 2020.\nThe green means less destruction on vegatation, and the yellow means more destruction.") +
   theme_bw() +
   theme(plot.title = element_text(size = 10.5),
         plot.caption = element_text(hjust = 0))
-map_deer_in_NC
+```
+
+```{r}
+map1_deer_in_NC / map2_deer_in_NC
+```
+```{r}
+map3_deer_in_NC / map5_deer_in_NC
+```
+```{r}
+map4_deer_in_NC / map6_deer_in_NC
 ```
 
 ### Map 1-4
