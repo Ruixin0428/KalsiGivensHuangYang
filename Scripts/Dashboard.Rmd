@@ -1,0 +1,231 @@
+---
+title: "NC White-Tailed Deer Interactive Dashboard"
+author: "Ruixin Yang, Sara Huang, Gina Givens, Jasleen Kalsi"
+date: "2026-11-11"
+output:
+  html_document: 
+    toc: true
+    toc_float: true
+    theme: flatly
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# Load the cleaned deer dataset
+library(shiny)
+library(readr)
+library(sf)
+library(tidyverse)
+library(ggplot2)
+library(patchwork)
+
+df_deer_clean <- read_csv("data/processed/NC_Deer_Cleaned_2010_2020.csv")
+NC_map <- st_read("data/processed/NC_map_joined.shp")
+
+# Check the dataset
+dim(df_deer_clean)
+head(df_deer_clean)
+```
+
+## Introduction: Deer Observation Data and Methods
+
+This section presents exploratory patterns in white-tailed deer observations across North Carolina from 2010 to 2020.
+The dataset contains 2,891 iNaturalist observation records, including observation dates, geographic coordinates, and quality indicators.
+
+We calculated the annual observation data to analyze the temporal trends.
+Additionally, to study the spatial distribution, we used spatial connection technology to match the observation coordinates with the boundary polygons of each county in North Carolina, and summarized and visualized the county-level data.
+The analysis focuses on recorded observations rather than the actual abundance of deer.
+
+## Figures and Maps
+
+```{r counting observations by year}
+# Count deer observations by year
+annual_counts <- as.data.frame(
+  table(df_deer_clean$year)
+)
+
+# Rename columns
+names(annual_counts) <- c("Year", "Observations")
+
+# Convert year and count to numeric
+annual_counts$Year <- as.integer(
+  as.character(annual_counts$Year)
+)
+
+annual_counts$Observations <- as.integer(
+  annual_counts$Observations
+)
+
+# View the summary table
+annual_counts
+
+```
+
+```{r year_slider, echo=FALSE}
+sliderInput(
+  inputId = "year_range",
+  label = "Select Year Range:",
+  min = 2010,
+  max = 2020,
+  value = c(2010, 2020),
+  step = 1,
+  sep = ""
+)
+```
+
+
+
+```{r interactive_annual_plot, echo=FALSE}
+renderPlot({
+
+  annual_filtered <- annual_counts |>
+    dplyr::filter(
+      Year >= input$year_range[1],
+      Year <= input$year_range[2]
+    )
+
+  plot(
+    annual_filtered$Year,
+    annual_filtered$Observations,
+    type = "o",
+    pch = 16,
+    col = "steelblue",
+    lwd = 2,
+    xlab = "Year",
+    ylab = "Number of observations",
+    main = "Annual White-tailed Deer Observations in North Carolina",
+    xaxt = "n",
+    xlim = c(2010, 2020),
+    ylim = c(0, max(annual_counts$Observations))
+  )
+
+  axis(
+    1,
+    at = 2010:2020
+  )
+
+})
+```
+Question: How are white-tailed deer observations distributed across North Carolina counties with different development rate?
+Observed pattern: In terms of housing units, the deer observations before the development (2010-2015) spread out more than the once from 2020, which gather in 4 clusters in the counties with more housing units. For vegetation cover changes, the pattern is less obvious: deer observations cluster in both regions with high and low destruction.
+Units: Number of iNaturalist deer observation records per county.
+Limitation: There were fewer data for 2010 to 2015, so we decided to add all these years up and treat the sum as the pre-development deer distribution. Also, the increase in deer observation may not correlated to development itself, but the increase of people visiting the area and thus seeing more deer.
+
+```{r}
+# Load North Carolina county boundaries
+nc_map <- st_read("data/processed/NC_map_joined.shp")
+
+# Convert deer coordinates into spatial points
+deer_sf <- st_as_sf(
+  df_deer_clean,
+  coords = c("longitude", "latitude"),
+  crs = 4326,
+  remove = FALSE
+)
+
+# Match the coordinate system of the county map
+deer_sf <- st_transform(deer_sf, st_crs(NC_map))
+
+# Assign each deer observation to a county
+deer_county <- st_join(
+  deer_sf,
+  NC_map[, c("NAME", "GEOID")],
+  join = st_within,
+  left = TRUE
+)
+
+
+# Preview the results
+head(st_drop_geometry(deer_county)[, c("id", "NAME", "GEOID")])
+```
+
+```{r plot_function}
+plot_it <- function(the_parameter, start_year, end_year) {
+
+  # Filter deer observations by year
+  deer_filtered <- deer_sf |>
+    filter(year >= start_year,
+           year <= end_year)
+
+  # Plot selected land use variable
+  ggplot() +
+    geom_sf(
+      data = NC_map,
+      aes(fill = .data[[the_parameter]]),
+      color = "black",
+      linewidth = 0.2
+    ) +
+    geom_sf(
+      data = deer_filtered,
+      color = "cyan",
+      size = 0.5,
+      alpha = 0.5
+    ) +
+    scale_fill_gradient2(
+      low = "darkblue",
+      mid = "white",
+      high = "red",
+      midpoint = 0
+    ) +
+    labs(
+      title = if (the_parameter == "HU_dif") {
+        "Housing Development and Deer Observations"
+      } else {
+        "Vegetation Change and Deer Observations"
+      },
+      subtitle = paste(start_year, "-", end_year),
+      fill = "Change"
+    ) +
+    theme_bw()
+}
+```
+
+
+```{r interactive_map, echo=FALSE}
+# Select housing development or vegetation change
+selectInput(
+  inputId = "the_parameter",
+  label = "Select Land Use Variable:",
+  choices = c(
+    "Housing Development" = "HU_dif",
+    "Vegetation Change" = "VEG_dif"
+  ),
+  selected = "HU_dif"
+)
+
+# Select deer observation period
+selectInput(
+  inputId = "yearPeriod",
+  label = "Select Observation Period:",
+  choices = c(
+    "2010–2015" = "before",
+    "2016–2020" = "after"
+  ),
+  selected = "before"
+)
+
+# Display interactive map
+renderPlot({
+
+  if (input$yearPeriod == "before") {
+    start_year <- 2010
+    end_year <- 2015
+  } else {
+    start_year <- 2016
+    end_year <- 2020
+  }
+
+  plot_it(
+    input$the_parameter,
+    start_year,
+    end_year
+  )
+
+})
+```
+```
+
+
+
+
