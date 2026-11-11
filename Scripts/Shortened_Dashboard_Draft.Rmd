@@ -11,7 +11,11 @@ runtime: shiny
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(
+  echo = FALSE,
+  message = FALSE,
+  warning = FALSE
+)
 # Load the cleaned deer dataset
 library(shiny)
 library(readr)
@@ -39,7 +43,7 @@ The analysis focuses on recorded observations rather than the actual abundance o
 
 ## Figures and Maps
 
-```{r counting observations by year}
+```{r counting observations by year, include=FALSE}
 # Count deer observations by year
 annual_counts <- as.data.frame(
   table(df_deer_clean$year)
@@ -112,7 +116,7 @@ Observed pattern: In terms of housing units, the deer observations before the de
 Units: Number of iNaturalist deer observation records per county.
 Limitation: There were fewer data for 2010 to 2015, so we decided to add all these years up and treat the sum as the pre-development deer distribution. Also, the increase in deer observation may not correlated to development itself, but the increase of people visiting the area and thus seeing more deer.
 
-```{r}
+```{r, include = FALSE}
 # Load North Carolina county boundaries
 nc_map <- st_read("data/processed/NC_map_joined.shp")
 
@@ -140,7 +144,7 @@ deer_county <- st_join(
 head(st_drop_geometry(deer_county)[, c("id", "NAME", "GEOID")])
 ```
 
-```{r plot_function}
+```{r plot_function, echo= FALSE}
 plot_it <- function(the_parameter, start_year, end_year) {
 
   # Filter deer observations by year
@@ -224,8 +228,3 @@ renderPlot({
 
 })
 ```
-```
-
-
-
-

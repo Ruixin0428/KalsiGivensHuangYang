@@ -11,8 +11,14 @@ runtime: shiny
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(
+  echo = FALSE,
+  message = FALSE,
+  warning = FALSE
+)
 # Load the cleaned deer dataset
+#install.packages('rsconnect')
+library(rsconnect)
 library(shiny)
 library(readr)
 library(sf)
@@ -22,7 +28,6 @@ library(patchwork)
 
 df_deer_clean <- read_csv("data/processed/NC_Deer_Cleaned_2010_2020.csv")
 NC_map <- st_read("data/processed/NC_map_joined.shp")
-
 # Check the dataset
 dim(df_deer_clean)
 head(df_deer_clean)
@@ -37,9 +42,15 @@ We calculated the annual observation data to analyze the temporal trends.
 Additionally, to study the spatial distribution, we used spatial connection technology to match the observation coordinates with the boundary polygons of each county in North Carolina, and summarized and visualized the county-level data.
 The analysis focuses on recorded observations rather than the actual abundance of deer.
 
+## Research Question
+Are white-tailed deer observations more frequent at a close distance to developed areas that border wildland vegetation in North Carolina?
+
+## Intended Audience 
+As white-tailed deer populations in North Carolina increase due to few natural predators, and population growth during off-hunting seasons, human-deer conflicts can become more prevalent. This sometimes mean an increase in vehical collisions. Knowing the number of deer and distance they are away from developed areas bordering wildland vegetation can inform the North Carolina Wildlife Resource Commission on region specific harvest strategies. It can also help land owners and land conservation organizations understand where to watch for deer presence in their neighborhoods and on protected lands.
+
 ## Figures and Maps
 
-```{r counting observations by year}
+```{r counting observations by year, include=FALSE}
 # Count deer observations by year
 annual_counts <- as.data.frame(
   table(df_deer_clean$year)
@@ -112,9 +123,7 @@ Observed pattern: In terms of housing units, the deer observations before the de
 Units: Number of iNaturalist deer observation records per county.
 Limitation: There were fewer data for 2010 to 2015, so we decided to add all these years up and treat the sum as the pre-development deer distribution. Also, the increase in deer observation may not correlated to development itself, but the increase of people visiting the area and thus seeing more deer.
 
-```{r}
-# Load North Carolina county boundaries
-nc_map <- st_read("data/processed/NC_map_joined.shp")
+```{r, include = FALSE}
 
 # Convert deer coordinates into spatial points
 deer_sf <- st_as_sf(
@@ -140,7 +149,7 @@ deer_county <- st_join(
 head(st_drop_geometry(deer_county)[, c("id", "NAME", "GEOID")])
 ```
 
-```{r plot_function}
+```{r plot_function, echo= FALSE}
 plot_it <- function(the_parameter, start_year, end_year) {
 
   # Filter deer observations by year
@@ -224,8 +233,4 @@ renderPlot({
 
 })
 ```
-```
-
-
-
 
