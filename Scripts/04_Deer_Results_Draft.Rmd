@@ -15,6 +15,7 @@ library(sf)
 library(tidyverse)
 library(ggplot2)
 library(patchwork)
+library(multcompView)
 
 df_deer_clean <- read_csv("data/processed/NC_Deer_Cleaned_2010_2020.csv")
 NC_map <- st_read("data/processed/NC_map_joined.shp")
@@ -233,24 +234,24 @@ df_deer_spatial <- df_deer_clean %>%
 map1_deer_in_NC = ggplot() + 
   geom_sf(data = NC_map, color = "black", linewidth = 0.5, aes(fill = HU_dif)) + 
   scale_fill_gradient(low="darkblue", high="red") +
-  labs(title = "Housing Unit Differnce by Counties",
-       fill = "Difference",
-       caption = "Housing unit difference is calculated with data from 2020 subtracting data from 2010.") +
+  labs(title = "Housing Unit (HU) and Vegetation Coverage (VC) Difference by Counties in NC",
+       fill = "HU Difference") +
   theme_bw() +
-  theme(plot.title = element_text(size = 11.5),
-        plot.caption = element_text(hjust = 0))
+  theme(plot.title = element_text(size = 11.5))
 ```
 
 ```{r map 2}
 map2_deer_in_NC = ggplot() + 
   geom_sf(data = NC_map, color = "black", linewidth = 0.5, aes(fill = VEG_dif)) + 
   scale_fill_gradient(low="yellow",high="#062D03") +
-  labs(title = "Vegetation Coverage Differnce by Counties",
-       fill = "Difference",
-       caption = "Vegetation coverage difference is calculated with data from 2019 subtracting data from 2011.") +
+  labs(fill = "VC Difference",
+       caption = "The top figure shows the housing unit difference, and the bottom figure shows the vegetation coverage difference. Housing unit difference\nis calculated with data from 2020 subtracting data from 2010, and the red shade indicates higher increase. Vegetation coverage difference\nis calculated with data from 2019 subtracting data from 2011, and the yellow shade indicates higher loss. Note that counties with higher\nincrease in housing unit tends to lose more vegatation coverage.") +
   theme_bw() +
-  theme(plot.title = element_text(size = 10.5),
-        plot.caption = element_text(hjust = 0))
+  theme(plot.caption = element_text(hjust = 0))
+```
+
+```{r}
+map1_deer_in_NC / map2_deer_in_NC
 ```
 
 ```{r map 3}
@@ -258,25 +259,25 @@ map3_deer_in_NC = ggplot() +
   geom_sf(data = NC_map, color = "black", linewidth = 0.5, aes(fill = HU_dif)) + 
   geom_sf(data = df_deer_spatial%>%filter(year == "2010" | year == "2011" | year == "2012" | year == "2013" | year == "2014" | year == "2015"), color = "cyan", size = 0.5, alpha = 0.5, stroke = 0.5) +
   scale_fill_gradient(low="darkblue", high="red") +
-  labs(title = "Housing Unit Differnce by Counties with White-tailed Deer Observations before Development",
-       fill = "Difference",
-       caption = "Housing unit difference is calculated with data from 2020 subtracting data from 2010. Deer observation is the sum from 2010\nto 2015. The blue means unchanged or small increase of housing units in the counties, and the red means large increase.") +
+  labs(title = "Housing Unit Difference by Counties with White-tailed Deer Observations before and after Development in NC",
+       fill = "HU Difference") +
   theme_bw() +
-  theme(plot.title = element_text(size = 11.5),
-        plot.caption = element_text(hjust = 0))
+  theme(plot.title = element_text(size = 11.5))
 ```
 
-```{r mapn 4}
+```{r map 4}
 map4_deer_in_NC = ggplot() + 
   geom_sf(data = NC_map, color = "black", linewidth = 0.5, aes(fill = HU_dif)) + 
   geom_sf(data = df_deer_spatial%>%filter(year == "2020"), color = "cyan", size = 0.5, alpha = 0.5, stroke = 0.5) +
   scale_fill_gradient(low="darkblue",high="red") +
-  labs(title = "Housing Unit Differnce by Counties with White-tailed Deer Observations after Development",
-       fill = "Difference",
-       caption = "Housing unit difference is calculated with data from 2020 subtracting data from 2010. Deer observation is from 2020. The\nblue means unchanged or small increase of housing units in the counties, and the red means large increase.") +
+  labs(caption = "The top figure shows the distribution of white-tailed deer observations before development, and the bottom figure shows distribution after development.\nDeer observations in the top figure is the sum from 2010 to 2015 due to the limitation of small data points, and the ones in the bottom figure is from 2020.\nNote that after development, more deer observations were made in counties with higher increase in housing unit.") +
   theme_bw() +
-  theme(plot.title = element_text(size = 12),
-        plot.caption = element_text(hjust = 0))
+  theme(plot.caption = element_text(hjust = 0),
+        legend.position = "none")
+```
+
+```{r}
+map3_deer_in_NC / map4_deer_in_NC
 ```
 
 ```{r map 5}
@@ -284,12 +285,10 @@ map5_deer_in_NC = ggplot() +
   geom_sf(data = NC_map, color = "black", linewidth = 0.5, aes(fill = VEG_dif)) + 
   geom_sf(data = df_deer_spatial%>%filter(year == "2010" | year == "2011" | year == "2012" | year == "2013" | year == "2014" | year == "2015"), color = "cyan", size = 0.5, alpha = 0.5, stroke = 0.5) +
   scale_fill_gradient(low="yellow",high="#062D03") +
-  labs(title = "Vegetation Coverage Differnce by Counties with White-tailed Deer Observations before Development",
-       fill = "Difference",
-       caption = "Vegetation cover difference is calculated with data from 2019 subtracting data from 2011. Deer observation is the sum from\n2010 to 2015. The green means less destruction on vegatation, and the yellow means more destruction.") +
+  labs(title = "Vegetation Coverage Difference by Counties with White-tailed Deer Observations before and after Development",
+       fill = "VG Difference") +
   theme_bw() +
-  theme(plot.title = element_text(size = 10.5),
-        plot.caption = element_text(hjust = 0))
+  theme(plot.title = element_text(size = 11.5))
 ```
 
 ```{r map 6}
@@ -297,22 +296,14 @@ map6_deer_in_NC = ggplot() +
   geom_sf(data = NC_map, color = "black", linewidth = 0.5, aes(fill = VEG_dif)) + 
   geom_sf(data = df_deer_spatial%>%filter(year == "2020"), color = "cyan", size = 0.5, alpha = 0.5, stroke = 0.5) +
   scale_fill_gradient(low="yellow",high="#062D03") +
-  labs(title = "Vegetation Coverage Differnce by Counties with White-tailed Deer Observations after Development",
-       fill = "Difference",
-       caption = "Vegetation coverage difference is calculated with data from 2019 subtracting data from 2011. Deer observation is from 2020.\nThe green means less destruction on vegatation, and the yellow means more destruction.") +
+  labs(caption = "The top figure shows the distribution of white-tailed deer observations before loss of vegetation coverage - marked as pre-development, and the bottom\nfigure shows distribution afterwards. Deer observations in the top figure is the sum from 2010 to 2015 due to the limitation of small data points, and the\nones in the bottom figure is from 2020. Note that after development, more deer observations were made in counties with higher loss in vegetation coverage.") +
   theme_bw() +
-  theme(plot.title = element_text(size = 10.5),
-        plot.caption = element_text(hjust = 0))
+  theme(plot.caption = element_text(hjust = 0),
+        legend.position = "none")
 ```
 
 ```{r}
-map1_deer_in_NC / map2_deer_in_NC
-```
-```{r}
-map3_deer_in_NC / map5_deer_in_NC
-```
-```{r}
-map4_deer_in_NC / map6_deer_in_NC
+map5_deer_in_NC / map6_deer_in_NC
 ```
 
 ### Map 1-4
@@ -332,7 +323,6 @@ df_deer_in_NC <- st_join(df_deer_spatial, NC_map, join = st_within) %>%
   group_by(NAME, year, development, forest) %>%
   summarise(observation=n()) %>%
   ungroup(year, development, forest) %>%
-  mutate(observation = ifelse(year == "2020", observation, sum(observation))) %>%
   mutate(period = ifelse(year == "2020", "after", "before"))
 ```
 
@@ -447,3 +437,8 @@ ChatGPT was used as a supplementary tool during the development of this analysis
 - **Code understanding:** Provided explanations of R functions and spatial analysis operations.
 
 The project code was primarily written and executed by the student in RStudio. Outputs were reviewed, and adjustments were made based on the results. All figures and interpretations were developed using the project data.
+
+```{r}
+df_try <- df_deer_spatial%>%filter(year != "2016" & year != "2017" & year != "2018" & year != "2019" & year != "2020")
+df_try1 <- df_deer_spatial%>%filter(year == "2020")
+```
