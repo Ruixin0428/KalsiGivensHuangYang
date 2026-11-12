@@ -77,6 +77,78 @@ axis(
   at = 2010:2020,
   labels = 2010:2020
 )
+
+df_raw <- read_csv(
+  "data/raw/NC_WhiteTailedDeer_iNaturalist_public.csv"
+)
+
+names(df_raw)
+
+# Keep only deer observations in the cleaned dataset
+df_users <- df_raw[
+  df_raw$id %in% df_deer_clean$id,
+]
+
+# Count unique observers in each year
+unique_users <- aggregate(
+  user_id ~ year,
+  data = transform(
+    df_users,
+    year = as.integer(
+      format(as.Date(observed_on), "%Y")
+    )
+  ),
+  FUN = function(x) length(unique(x[!is.na(x)]))
+)
+
+names(unique_users) <- c("Year", "Unique_Observers")
+
+unique_users
+
+
+# Combine annual observations with unique observer counts
+annual_comparison <- merge(
+  annual_counts,
+  unique_users,
+  by = "Year"
+)
+
+# Plot deer observations
+plot(
+  annual_comparison$Year,
+  annual_comparison$Observations,
+  type = "o",
+  pch = 16,
+  col = "steelblue",
+  lwd = 2,
+  ylim = c(0, max(annual_comparison$Observations)),
+  xlab = "Year",
+  ylab = "Deer observation records",
+  main = "Deer Observations and iNaturalist Users in NC",
+  xaxt = "n"
+)
+
+axis(1, at = 2010:2020)
+
+# Add unique observers as a second line
+lines(
+  annual_comparison$Year,
+  annual_comparison$Unique_Observers,
+  type = "o",
+  pch = 17,
+  col = "darkorange",
+  lwd = 2
+)
+
+legend(
+  "topleft",
+  legend = c("Deer observations", "iNaturalist Users"),
+  col = c("steelblue", "darkorange"),
+  pch = c(16, 17),
+  lty = 1,
+  bty = "n"
+)
+
 ```
 
 ### Figure 1. Annual White-tailed Deer Observations in North Carolina (2010–2020)
