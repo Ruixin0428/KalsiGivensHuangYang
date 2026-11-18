@@ -50,6 +50,9 @@ Are white-tailed deer observations more frequent at a close distance to develope
 As white-tailed deer populations in North Carolina increase due to few natural predators, and population growth during off-hunting seasons, human-deer conflicts can become more prevalent. This sometimes mean an increase in vehical collisions. Knowing the number of deer and distance they are away from developed areas bordering wildland vegetation can inform the North Carolina Wildlife Resource Commission on region specific harvest strategies. It can also help land owners and land conservation organizations understand where to watch for deer presence in their neighborhoods and on protected lands.
 
 ## Figures and Maps
+
+### Deer Observations in NC and Related iNaturalist Users
+
 ```{r counting observations by year, include = FALSE}
 # Count deer observations by year
 annual_counts <- as.data.frame(
@@ -138,7 +141,6 @@ renderPlot({
     lwd = 2,
     xlab = "Year",
     ylab = "Number of observations / unique observers",
-    main = "Deer Observations in NC and Related iNaturalist Users",
     xaxt = "n",
     xlim = c(2010, 2020),
     ylim = c(0, max(
@@ -170,6 +172,64 @@ renderPlot({
 })
 ```
 
+### Correlation between Housing Unit Difference (HU_dif) and Vegetation Coverage Difference (VC_dif)
+
+The following map shows that counties with larger increases in housing units generally experienced greater decreases in vegetation coverage. 
+
+```{r, echo= FALSE}
+map1_deer_in_NC = ggplot() + 
+  geom_sf(data = NC_map, color = "black", linewidth = 0.5, aes(fill = HU_dif)) + 
+  scale_fill_gradient(low="darkblue", high="red") +
+  labs(title = "Housing Unit (HU) and Vegetation Coverage (VC) Difference by Counties in NC",
+       fill = "HU Difference") +
+  theme_bw() +
+  theme(plot.title = element_text(size = 12),
+        axis.text.x = element_text(size = 11),
+        axis.text.y = element_text(size = 11))
+
+map2_deer_in_NC = ggplot() + 
+  geom_sf(data = NC_map, color = "black", linewidth = 0.5, aes(fill = VEG_dif)) + 
+  scale_fill_gradient(low="yellow",high="#062D03") +
+  labs(fill = "VC Difference",) +
+  theme_bw() +
+  theme(plot.caption = element_text(hjust = 0, vjust = -2, size = 12),
+        axis.text.x = element_text(size = 11),
+        axis.text.y = element_text(size = 11))
+
+map1_deer_in_NC / map2_deer_in_NC
+```
+
+#### Diagnostic plots for Correlation
+```{r, include=FALSE}
+model <- lm(VEG_dif ~ HU_dif, data = NC_map)
+summary(model)
+```
+
+```{r, echo=FALSE}
+res_cor <- model$res
+par(mfrow=c(1,2))
+plot(x = NC_map$HU_dif,  y = NC_map$VEG_dif,
+  main = "HU_dif vs. VEG_dif",
+  xlab = "HU_dif",
+  ylab = "VEG_dif",
+  pch = 19,
+  col = "steelblue")
+abline(lm(VEG_dif ~ HU_dif, data = NC_map), col = "red", lwd = 2)
+qqnorm(res_cor, datax = TRUE)
+qqline(res_cor, col = "red", lwd = 2)
+```
+
+#### Key Summary of the Correlation Test
+
+1. Significant correlation between HU_dif and VC_dif (p < 2e-16).
+
+2. Equation: VC_dif = 143.34756 - 0.65957(HU_dif)
+
+3. Strong negative correlation between the two variables (R = - 0.9264973).
+
+4. 85.7% of the VC_dif variance is explained by HU_dif.
+
+
 ```{r, include = FALSE}
 
 # Convert deer coordinates into spatial points
@@ -196,6 +256,8 @@ deer_county <- st_join(
 head(st_drop_geometry(deer_county)[, c("id", "NAME", "GEOID")])
 ```
 
+### Map Comparisons with Deer Observation
+
 ```{r plot_function, echo= FALSE}
 plot_it <- function(the_parameter) {
 
@@ -212,6 +274,14 @@ plot_it <- function(the_parameter) {
   } else {
     "Vegetation Difference"
   }
+  
+  if (the_parameter == "HU_dif") {
+  my_low  <- "darkblue"
+  my_high <- "red"
+} else {
+  my_low  <- "yellow"
+  my_high <- "#062D03"
+}
 
   # Map 1: 2010–2015
   map_before <- ggplot() +
@@ -228,10 +298,7 @@ plot_it <- function(the_parameter) {
       alpha = 0.5,
       stroke = 0.5
     ) +
-    scale_fill_gradient(
-      low = "darkblue",
-      high = "red"
-    ) +
+    scale_fill_gradient(low = my_low, high = my_high) +
     scale_color_manual(
       name = NULL,
       values = c("Deer Observations" = "cyan"),
@@ -263,10 +330,7 @@ plot_it <- function(the_parameter) {
       alpha = 0.5,
       stroke = 0.5
     ) +
-    scale_fill_gradient(
-      low = "darkblue",
-      high = "red"
-    ) +
+    scale_fill_gradient(low = my_low, high = my_high) +
     scale_color_manual(
       name = NULL,
       values = c("Deer Observations" = "cyan"),
@@ -421,7 +485,8 @@ renderPlot({
     data = df_deer_in_NC,
     main = "Deer Observations by Group",
     xlab = "Group",
-    ylab = "Observations"
+    ylab = "Observations",
+    outline = FALSE
   )
 
   # 2. Normal Q-Q plot
