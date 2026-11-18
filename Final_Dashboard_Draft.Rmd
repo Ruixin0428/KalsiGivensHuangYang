@@ -312,7 +312,9 @@ renderPlot({
 }, height = 850)
 
 ```
+In terms of housing units, the deer observations before the development (2010-2015) spread out more than the once from 2020, which gather in 4 clusters in the counties with more housing units. For vegetation cover changes, the pattern is less obvious: deer observations cluster in both regions with high and low vegetation loss.
 
+## ANOVA Results
 ```{r, include - FALSE}
 df_deer_spatial <- df_deer_clean %>%
   select(observed_on, year, longitude, latitude) %>%
@@ -376,9 +378,80 @@ lines(x = seq(1:length(res_forest)), y = res_forest)
 abline(0,0)
 plot(fit_forest, res_forest, xlab="Fitted Values", ylab="Residuals")
 ```
-## ANOVA Results
 
 The following table summarizes the effects of observation period, land-use change, and their interaction on log-transformed deer observation counts.
+## ANOVA Model Diagnostics
+
+Select a model to examine its diagnostic plots.
+
+```{r interactive_anova_validity, echo=FALSE}
+
+# Select ANOVA model
+selectInput(
+  inputId = "anova_validity",
+  label = "Select ANOVA Model:",
+  choices = c(
+    "Housing Development" = "development",
+    "Vegetation Change" = "forest"
+  ),
+  selected = "forest"
+)
+
+# Display selected diagnostic plots
+renderPlot({
+
+  if (input$anova_validity == "development") {
+    model <- model_dev
+    variable <- "development"
+  } else {
+    model <- model_forest
+    variable <- "forest"
+  }
+
+  # Extract fitted values and residuals
+  fit <- fitted(model)
+  res <- residuals(model)
+
+  # Arrange plots in 2x2 layout
+  par(mfrow = c(2, 2))
+
+  # 1. Boxplot
+  boxplot(
+    as.formula(paste("observation ~", variable, "+ period")),
+    data = df_deer_in_NC,
+    main = "Deer Observations by Group",
+    xlab = "Group",
+    ylab = "Observations"
+  )
+
+  # 2. Normal Q-Q plot
+  qqnorm(
+    res,
+    main = "Normal Q-Q Plot"
+  )
+  qqline(res, col = "red", lwd = 2)
+
+  # 3. Residuals by observation order
+  plot(
+    seq_along(res), res,
+    xlab = "Observation Order",
+    ylab = "Residuals",
+    main = "Residuals by Order"
+  )
+  lines(seq_along(res), res)
+  abline(h = 0, col = "red", lty = 2)
+
+  # 4. Residuals vs fitted values
+  plot(
+    fit, res,
+    xlab = "Fitted Values",
+    ylab = "Residuals",
+    main = "Residuals vs Fitted"
+  )
+  abline(h = 0, col = "red", lty = 2)
+
+}, height = 700)
+```
 
 ```{r interactive_anova, echo=FALSE}
 
@@ -408,4 +481,9 @@ renderTable({
 }, digits = 4, rownames = FALSE)
 
 ```
-
+We marked the deer observations from 2010-2015 as pre-development and the data from 2020 as post-development. We also marked the different levels of development and vegetation coverage based on the subtraction columns.
+development: no value <= 0; yes value > 0
+vegetation coverage: inc value > 0; dec value < 0
+To fit the ANOVA assumptions better, according to the validity plots, the data is natural log transformed, and the assumptions are fulfilled, showing in the diagnosis plots.  
+For housing units, development and period are both significant on deer observation. The Tukey test shows that the counties that have significant difference of deer observations before and after development are those with development.
+For vegetation cover, forest clearing and period are both significant on deer observation. The Tukey test shows that the counties that have significant difference of deer observations before and after development are those with vegetation coverage decline.
