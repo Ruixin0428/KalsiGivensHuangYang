@@ -318,7 +318,7 @@ map2_deer_in_NC = ggplot() +
   geom_sf(data = NC_map, color = "black", linewidth = 0.5, aes(fill = VEG_dif)) + 
   scale_fill_gradient(low="yellow",high="#062D03") +
   labs(fill = "VC Difference",
-       caption = "The top figure shows the housing unit difference, and the bottom figure shows the vegetation coverage difference. Housing unit difference\nis calculated with data from 2020 subtracting data from 2010, and the red shade indicates higher increase. Vegetation coverage difference\nis calculated with data from 2019 subtracting data from 2011, and the yellow shade indicates higher loss. Note that counties with higher\nincrease in housing unit tends to lose more vegatation coverage.") +
+       caption = "The top figure shows the housing unit difference, and the bottom figure shows the vegetation coverage difference. HU\ndifference is calculated with data from 2020 subtracting data from 2010, and the red shade indicates higher increase. VC\ndifference is calculated with data from 2019 subtracting data from 2011, and the yellow shade indicates higher loss. Note\nthat counties with higher increase in HU tends to lose more VC.") +
   theme_bw() +
   theme(plot.caption = element_text(hjust = 0, vjust = -2, size = 12),
         axis.text.x = element_text(size = 11),
@@ -392,6 +392,27 @@ Question: How are white-tailed deer observations distributed across North Caroli
 Observed pattern: In terms of housing units, the deer observations before the development (2010-2015) spread out more than the once from 2020, which gather in 4 clusters in the counties with more housing units. For vegetation cover changes, the pattern is less obvious: deer observations cluster in both regions with high and low destruction.
 Units: Number of iNaturalist deer observation records per county.
 Limitation: There were fewer data for 2010 to 2015, so we decided to add all these years up and treat the sum as the pre-development deer distribution. Also, the increase in deer observation may not correlated to development itself, but the increase of people visiting the area and thus seeing more deer.
+
+## Correlation
+```{r}
+cor(NC_map$HU_dif, NC_map$VEG_dif)
+model <- lm(VEG_dif ~ HU_dif, data = NC_map)
+summary(model)
+```
+
+```{r}
+res_cor <- model$res
+par(mfrow=c(1,2))
+plot(x = NC_map$HU_dif,  y = NC_map$VEG_dif,
+  main = "HU_dif vs. VEG_dif",
+  xlab = "HU_dif",
+  ylab = "VEG_dif",
+  pch = 19,
+  col = "steelblue")
+abline(lm(VEG_dif ~ HU_dif, data = NC_map), col = "red", lwd = 2)
+qqnorm(res_cor, datax = TRUE)
+qqline(res_cor, col = "red", lwd = 2)
+```
 
 ## ANOVA
 ```{r data wrangling}
